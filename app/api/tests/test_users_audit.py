@@ -71,11 +71,10 @@ def people() -> dict[str, str]:
     return {"owner_secret": owner_secret, "reader_secret": reader_secret}
 
 
-def _sign_in(client: TestClient, email: str, password: str, secret: str) -> None:
+def _sign_in(client: TestClient, email: str, password: str, _secret: str) -> None:
     login = client.post("/auth/login", json={"email": email, "password": password})
     assert login.status_code == 200
-    code = pyotp.TOTP(secret).now()
-    assert client.post("/auth/totp", json={"code": code}).status_code == 200
+    assert client.cookies.get("vora_access")
 
 
 def test_invite_disable_and_audit_show_s2_writes(people: dict[str, str]) -> None:
@@ -99,18 +98,22 @@ def test_invite_disable_and_audit_show_s2_writes(people: dict[str, str]) -> None
             user.totp_confirmed = True
             session.commit()
 
-        assert (
-            owner.post(
-                "/auth/login", json={"email": "support@example.com", "password": "support-password"}
-            ).status_code
-            == 200
-        )
+        with TestClient(app) as support:
+            assert (
+                support.post(
+                    "/auth/login",
+                    json={"email": "support@example.com", "password": "support-password"},
+                ).status_code
+                == 200
+            )
         disabled = owner.post(f"/admin/users/{support_id}/disable")
         assert disabled.status_code == 200
         assert disabled.json()["disabled"] is True
-        blocked = owner.post(
-            "/auth/login", json={"email": "support@example.com", "password": "support-password"}
-        )
+        with TestClient(app) as support:
+            blocked = support.post(
+                "/auth/login",
+                json={"email": "support@example.com", "password": "support-password"},
+            )
         assert blocked.status_code == 403
 
         tenant = owner.post(

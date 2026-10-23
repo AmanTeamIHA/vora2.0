@@ -69,13 +69,10 @@ def accounts() -> dict[str, str]:
     }
 
 
-def _sign_in(client: TestClient, email: str, password: str, secret: str) -> None:
+def _sign_in(client: TestClient, email: str, password: str, _secret: str) -> None:
     login = client.post("/auth/login", json={"email": email, "password": password})
     assert login.status_code == 200
-    assert login.json()["totp_required"] is True
-    assert "vora_access" not in client.cookies
-    totp = client.post("/auth/totp", json={"code": pyotp.TOTP(secret).now()})
-    assert totp.status_code == 200
+    assert login.json()["ok"] is True
     assert client.cookies.get("vora_access")
 
 

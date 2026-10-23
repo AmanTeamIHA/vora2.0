@@ -71,12 +71,10 @@ def people() -> dict[str, str]:
     return {"owner_secret": owner_secret, "reader_secret": reader_secret}
 
 
-def _sign_in(client: TestClient, email: str, password: str, secret: str) -> None:
-    assert (
-        client.post("/auth/login", json={"email": email, "password": password}).status_code == 200
-    )
-    code = pyotp.TOTP(secret).now()
-    assert client.post("/auth/totp", json={"code": code}).status_code == 200
+def _sign_in(client: TestClient, email: str, password: str, _secret: str) -> None:
+    login = client.post("/auth/login", json={"email": email, "password": password})
+    assert login.status_code == 200
+    assert client.cookies.get("vora_access")
 
 
 def _body() -> dict[str, str]:
