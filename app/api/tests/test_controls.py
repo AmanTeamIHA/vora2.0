@@ -40,6 +40,7 @@ def people() -> dict[str, str]:
                 "tenant_invites, user_invites, user_roles, users, tenants CASCADE"
             )
         )
+        connection.execute(text("DELETE FROM plans WHERE name <> 'Starter'"))
     owner.dispose()
     client = Redis.from_url(get_settings().redis_url)
     client.delete(_GLOBAL_KILL)

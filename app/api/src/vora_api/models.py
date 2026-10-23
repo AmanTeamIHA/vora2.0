@@ -141,6 +141,39 @@ class PhoneNumber(Base):
     created_at: Mapped[datetime] = _created()
 
 
+class Agent(Base):
+    __tablename__ = "agents"
+
+    id: Mapped[uuid.UUID] = _pk()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("tenants.id"))
+    name: Mapped[str] = mapped_column(String(200))
+    deployed_version_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid, ForeignKey("agent_versions.id")
+    )
+    created_at: Mapped[datetime] = _created()
+
+
+class AgentVersion(Base):
+    __tablename__ = "agent_versions"
+
+    id: Mapped[uuid.UUID] = _pk()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("tenants.id"))
+    agent_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("agents.id"))
+    state: Mapped[str] = mapped_column(String(16), server_default=text("'draft'"))
+    config: Mapped[dict[str, object]] = mapped_column(JSON)
+    created_at: Mapped[datetime] = _created()
+
+
+class Call(Base):
+    __tablename__ = "calls"
+
+    id: Mapped[uuid.UUID] = _pk()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("tenants.id"))
+    agent_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("agents.id"))
+    agent_version_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("agent_versions.id"))
+    created_at: Mapped[datetime] = _created()
+
+
 class AuditLog(Base):
     __tablename__ = "audit_log"
 

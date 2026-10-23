@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from vora_api.agent_routes import router as agent_router
 from vora_api.auth_routes import router as auth_router
 from vora_api.control_routes import impersonation_from_cookie
 from vora_api.control_routes import router as control_router
@@ -20,6 +21,7 @@ from vora_api.user_routes import router as user_router
 
 app = FastAPI(title="Vora API", version="0.1.0")
 app.include_router(auth_router)
+app.include_router(agent_router)
 app.include_router(tenant_router)
 app.include_router(plan_router)
 app.include_router(user_router)
