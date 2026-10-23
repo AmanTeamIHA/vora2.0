@@ -1,0 +1,37 @@
+name: bootstrap-owner
+
+on:
+  workflow_dispatch:
+
+jobs:
+  owner:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::585008088038:role/vora2-github-dev
+          aws-region: ap-south-1
+      - name: Run the one-off owner task
+        run: |
+          set -eu
+          cluster=vora2-dev
+          region=ap-south-1
+          net="$(aws ecs describe-services --cluster "$cluster" --services vora2-api --region "$region" --query 'services[0].networkConfiguration.awsvpcConfiguration')"
+          subnets="$(printf '%s' "$net" | jq -r '.subnets | join(",")')"
+          groups="$(printf '%s' "$net" | jq -r '.securityGroups | join(",")')"
+          task="$(aws ecs run-task \
+            --cluster "$cluster" \
+            --region "$region" \
+            --launch-type FARGATE \
+            --task-definition vora2-bootstrap-owner \
+            --network-configuration "awsvpcConfiguration={subnets=[$subnets],securityGroups=[$groups],assignPublicIp=DISABLED}" \
+            --query 'tasks[0].taskArn' --output text)"
+          aws ecs wait tasks-stopped --cluster "$cluster" --region "$region" --tasks "$task"
+          code="$(aws ecs describe-tasks --cluster "$cluster" --region "$region" --tasks "$task" --query 'tasks[0].containers[0].exitCode' --output text)"
+          echo "bootstrap-owner exit $code"
+          echo "The TOTP URI is in CloudWatch log group /vora2/dev/bootstrap-owner. It is not printed here."
+          test "$code" = "0"

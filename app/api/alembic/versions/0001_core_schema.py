@@ -6,6 +6,8 @@ Create Date: 2026-10-23
 
 """
 
+import os
+
 import sqlalchemy as sa
 from alembic import op
 
@@ -30,7 +32,8 @@ def _role_exists(name: str) -> bool:
 def _create_login_role(name: str, bypass: bool) -> None:
     if _role_exists(name):
         return
-    password = _LOCAL_ROLE_PASSWORD.replace("'", "''")
+    env_name = "VORA_ADMIN_PASSWORD" if name == "vora_admin" else "VORA_APP_PASSWORD"
+    password = os.environ.get(env_name, _LOCAL_ROLE_PASSWORD).replace("'", "''")
     bypass_sql = "BYPASSRLS" if bypass else "NOBYPASSRLS"
     with op.get_context().autocommit_block():
         op.execute(
