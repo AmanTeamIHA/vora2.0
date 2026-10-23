@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, Uuid, text
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text, Uuid, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from vora_api.db import Base
@@ -74,7 +74,23 @@ class Plan(Base):
 
     id: Mapped[uuid.UUID] = _pk()
     name: Mapped[str] = mapped_column(String(80), unique=True)
+    per_minute_rate_paise: Mapped[int] = mapped_column(Integer, server_default=text("0"))
+    transfer_leg_rate_paise: Mapped[int] = mapped_column(Integer, server_default=text("0"))
+    max_concurrent_calls: Mapped[int] = mapped_column(Integer, server_default=text("1"))
+    max_outbound_share_percent: Mapped[int] = mapped_column(Integer, server_default=text("100"))
+    max_agents: Mapped[int] = mapped_column(Integer, server_default=text("1"))
+    languages: Mapped[list[str]] = mapped_column(JSON, server_default=text("'[]'::json"))
+    feature_flags: Mapped[dict[str, bool]] = mapped_column(JSON, server_default=text("'{}'::json"))
     created_at: Mapped[datetime] = _created()
+
+
+class TenantLimit(Base):
+    __tablename__ = "tenant_limits"
+
+    tenant_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("tenants.id"), primary_key=True)
+    max_concurrent_calls: Mapped[int | None] = mapped_column(Integer)
+    per_minute_rate_paise: Mapped[int | None] = mapped_column(Integer)
+    transfer_leg_rate_paise: Mapped[int | None] = mapped_column(Integer)
 
 
 class TenantInvite(Base):

@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from vora_api.auth_routes import router as auth_router
 from vora_api.db import get_session, postgres_ok
 from vora_api.models import User
+from vora_api.plan_routes import router as plan_router
 from vora_api.redis_client import redis_ok
 from vora_api.settings import get_settings
 from vora_api.tenant_context import current_tenant_id
@@ -15,12 +16,13 @@ from vora_api.tenant_routes import router as tenant_router
 app = FastAPI(title="Vora API", version="0.1.0")
 app.include_router(auth_router)
 app.include_router(tenant_router)
+app.include_router(plan_router)
 settings = get_settings()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
+    allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
