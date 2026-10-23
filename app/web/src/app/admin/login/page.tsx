@@ -23,7 +23,8 @@ export default function LoginPage() {
       body: JSON.stringify({ email, password }),
     });
     if (!response.ok) {
-      setError("Email or password is wrong");
+      const failure = (await response.json().catch(() => null)) as { detail?: string } | null;
+      setError(failure?.detail ?? "Email or password is wrong");
       return;
     }
     const body = (await response.json()) as { provisioning_uri?: string };

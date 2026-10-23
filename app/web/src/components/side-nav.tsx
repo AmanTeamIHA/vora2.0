@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "cn";
-import type { NavItem } from "@/lib/nav";
+import { navIsActive, type NavItem } from "@/lib/nav";
 
 export function SideNav({ items }: { items: NavItem[] }) {
   const pathname = usePathname();
@@ -11,7 +11,7 @@ export function SideNav({ items }: { items: NavItem[] }) {
   return (
     <nav aria-label="Sections" className="flex gap-1 overflow-x-auto md:flex-col">
       {items.map((item) => {
-        const active = item.ready && (pathname === item.href || pathname.startsWith(`${item.href}/`));
+        const active = item.ready && navIsActive(pathname, item.href, items);
         if (!item.ready) {
           return (
             <span
