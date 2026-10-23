@@ -1,7 +1,11 @@
 from vora_api.models import Plan, TenantLimit
 
 
-def effective_limits(plan: Plan, override: TenantLimit | None) -> dict[str, object]:
+def effective_limits(
+    plan: Plan,
+    override: TenantLimit | None,
+    tenant_flags: dict[str, bool] | None = None,
+) -> dict[str, object]:
     """Plan values, replaced only where this tenant has an override."""
 
     def pick(override_value: int | None, plan_value: int) -> int:
@@ -18,5 +22,5 @@ def effective_limits(plan: Plan, override: TenantLimit | None) -> dict[str, obje
         "max_outbound_share_percent": plan.max_outbound_share_percent,
         "max_agents": plan.max_agents,
         "languages": list(plan.languages or []),
-        "feature_flags": dict(plan.feature_flags or {}),
+        "feature_flags": {**dict(plan.feature_flags or {}), **dict(tenant_flags or {})},
     }

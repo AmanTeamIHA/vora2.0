@@ -128,7 +128,7 @@ def _limits(session: Session, tenant_id: uuid.UUID) -> dict[str, object]:
     if plan is None:
         raise HTTPException(status_code=404, detail="Tenant has no plan")
     override = session.get(TenantLimit, tenant_id)
-    payload = effective_limits(plan, override)
+    payload = effective_limits(plan, override, tenant.feature_flags)
     payload["overrides"] = {
         "max_concurrent_calls": None if override is None else override.max_concurrent_calls,
         "per_minute_rate_paise": None if override is None else override.per_minute_rate_paise,

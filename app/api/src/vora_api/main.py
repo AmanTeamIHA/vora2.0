@@ -5,7 +5,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from vora_api.auth_routes import router as auth_router
+from vora_api.control_routes import impersonation_from_cookie
+from vora_api.control_routes import router as control_router
 from vora_api.db import get_session, postgres_ok
+from vora_api.impersonation import current_impersonation
 from vora_api.models import User
 from vora_api.number_routes import router as number_router
 from vora_api.plan_routes import router as plan_router
@@ -21,6 +24,7 @@ app.include_router(tenant_router)
 app.include_router(plan_router)
 app.include_router(user_router)
 app.include_router(number_router)
+app.include_router(control_router)
 settings = get_settings()
 app.add_middleware(
     CORSMiddleware,
@@ -34,10 +38,14 @@ app.add_middleware(
 @app.middleware("http")
 async def bind_tenant(request: Request, call_next):
     token = current_tenant_id.set(request.headers.get("x-tenant-id", "").strip())
+    impersonation = current_impersonation.set(
+        impersonation_from_cookie(request.cookies.get("vora_impersonate"))
+    )
     try:
         return await call_next(request)
     finally:
         current_tenant_id.reset(token)
+        current_impersonation.reset(impersonation)
 
 
 @app.get("/healthz")
