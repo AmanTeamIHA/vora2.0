@@ -2,7 +2,6 @@ import uuid
 from datetime import UTC, datetime, timedelta
 
 import jwt
-import pyotp
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
@@ -24,10 +23,6 @@ _WRITE_ROLES = frozenset({"Owner", "Platform Admin"})
 class LoginBody(BaseModel):
     email: str
     password: str
-
-
-class TotpBody(BaseModel):
-    code: str
 
 
 class GrantBody(BaseModel):
@@ -120,6 +115,29 @@ def require_user(request: Request) -> AuthUser:
     )
 
 
+def _start_session(response: Response, user_id: uuid.UUID, email: str, roles: list[str]) -> None:
+    settings = get_settings()
+    _cookie(
+        response,
+        "vora_access",
+        _token(
+            {"sub": str(user_id), "email": email, "roles": roles, "purpose": "access"},
+            timedelta(minutes=settings.access_ttl_minutes),
+        ),
+        settings.access_ttl_minutes * 60,
+    )
+    _cookie(
+        response,
+        "vora_refresh",
+        _token(
+            {"sub": str(user_id), "purpose": "refresh"},
+            timedelta(days=settings.refresh_ttl_days),
+        ),
+        settings.refresh_ttl_days * 24 * 60 * 60,
+    )
+    _clear(response, "vora_pending")
+
+
 def require_writer(user: AuthUser = Depends(require_user)) -> AuthUser:
     if not user.can_write:
         raise HTTPException(status_code=403, detail="This role cannot change data")
@@ -142,82 +160,13 @@ def login(body: LoginBody, response: Response) -> dict[str, object]:
             raise HTTPException(status_code=401, detail="Email or password is wrong")
         _reject_if_disabled(session, user)
         _reject_if_suspended(session, user)
-        if not user.totp_secret:
-            user.totp_secret = pyotp.random_base32()
-        uri = (
-            None
-            if user.totp_confirmed
-            else pyotp.TOTP(user.totp_secret).provisioning_uri(
-                name=user.email, issuer_name="Vora 2.0"
-            )
-        )
-        user_id = user.id
-        session.commit()
-
-    _cookie(
-        response,
-        "vora_pending",
-        _token({"sub": str(user_id), "purpose": "totp"}, timedelta(minutes=5)),
-        5 * 60,
-    )
-    payload: dict[str, object] = {"totp_required": True}
-    if uri:
-        payload["provisioning_uri"] = uri
-    return payload
-
-
-@router.post("/auth/totp")
-def confirm_totp(body: TotpBody, request: Request, response: Response) -> dict[str, bool]:
-    raw = request.cookies.get("vora_pending")
-    if not raw:
-        raise HTTPException(status_code=401, detail="Sign in required")
-    try:
-        pending = _decode(raw)
-    except jwt.PyJWTError as exc:
-        raise HTTPException(status_code=401, detail="Sign in required") from exc
-    if pending.get("purpose") != "totp":
-        raise HTTPException(status_code=401, detail="Sign in required")
-
-    with Session(get_admin_engine()) as session:
-        user = session.get(User, uuid.UUID(str(pending["sub"])))
-        valid = bool(
-            user
-            and user.totp_secret
-            and pyotp.TOTP(user.totp_secret).verify(body.code, valid_window=1)
-        )
-        if user is None or not valid:
-            _audit(session, "login_failed", user.id if user else None)
-            session.commit()
-            raise HTTPException(status_code=401, detail="Code is wrong")
-        _reject_if_disabled(session, user)
-        _reject_if_suspended(session, user)
-        user.totp_confirmed = True
         roles = _roles_for(session, user.id)
         _audit(session, "login", user.id)
         email = user.email
         user_id = user.id
         session.commit()
 
-    settings = get_settings()
-    _cookie(
-        response,
-        "vora_access",
-        _token(
-            {"sub": str(user_id), "email": email, "roles": roles, "purpose": "access"},
-            timedelta(minutes=settings.access_ttl_minutes),
-        ),
-        settings.access_ttl_minutes * 60,
-    )
-    _cookie(
-        response,
-        "vora_refresh",
-        _token(
-            {"sub": str(user_id), "purpose": "refresh"},
-            timedelta(days=settings.refresh_ttl_days),
-        ),
-        settings.refresh_ttl_days * 24 * 60 * 60,
-    )
-    _clear(response, "vora_pending")
+    _start_session(response, user_id, email, roles)
     return {"ok": True}
 
 
@@ -241,16 +190,7 @@ def refresh(request: Request, response: Response) -> dict[str, bool]:
         _reject_if_suspended(session, user)
         roles = _roles_for(session, user.id)
         email = user.email
-    settings = get_settings()
-    _cookie(
-        response,
-        "vora_access",
-        _token(
-            {"sub": str(user_id), "email": email, "roles": roles, "purpose": "access"},
-            timedelta(minutes=settings.access_ttl_minutes),
-        ),
-        settings.access_ttl_minutes * 60,
-    )
+    _start_session(response, user_id, email, roles)
     return {"ok": True}
 
 
