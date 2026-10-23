@@ -10,7 +10,7 @@ export const adminNav: NavItem[] = [
   { label: "Overview", href: "/admin", ready: true },
   { label: "Live calls", href: "/admin/live", ready: false },
   { label: "Tenants", href: "/admin/tenants", ready: true },
-  { label: "Plans & limits", href: "/admin/plans", ready: false },
+  { label: "Plans & limits", href: "/admin/plans", ready: true },
   { label: "Numbers", href: "/admin/numbers", ready: false },
   { label: "Users & roles", href: "/admin/users", ready: false },
   { label: "Audit log", href: "/admin/audit", ready: false },

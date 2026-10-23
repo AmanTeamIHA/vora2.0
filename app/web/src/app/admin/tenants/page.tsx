@@ -38,6 +38,9 @@ export default function TenantsPage() {
   const [editing, setEditing] = useState<string | null>(null);
   const [canWrite, setCanWrite] = useState(false);
   const [invite, setInvite] = useState<Invite | null>(null);
+  const [concurrency, setConcurrency] = useState("");
+  const [minuteRate, setMinuteRate] = useState("");
+  const [transferRate, setTransferRate] = useState("");
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
@@ -60,8 +63,8 @@ export default function TenantsPage() {
       .then((body: { can_write?: boolean }) => setCanWrite(Boolean(body.can_write)));
     void fetch("/api/admin/plans", { credentials: "include" })
       .then((response) => response.json())
-      .then((body: { plans?: string[] }) => {
-        if (body.plans?.length) setPlans(body.plans);
+      .then((body: { plans?: { name: string }[] }) => {
+        if (body.plans?.length) setPlans(body.plans.map((item) => item.name));
       });
   }, []);
 
@@ -101,9 +104,29 @@ export default function TenantsPage() {
       setError(body.detail ?? "Could not save the tenant");
       return;
     }
+    if (editing) {
+      const limits = await fetch(`/api/admin/tenants/${editing}/limits`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          max_concurrent_calls: concurrency === "" ? null : Number(concurrency),
+          per_minute_rate_paise: minuteRate === "" ? null : Number(minuteRate),
+          transfer_leg_rate_paise: transferRate === "" ? null : Number(transferRate),
+        }),
+      });
+      if (!limits.ok) {
+        setError("Tenant saved, but the limit override failed");
+        await load();
+        return;
+      }
+    }
     setInvite(body.invite ?? null);
     setEditing(null);
     setForm(emptyForm);
+    setConcurrency("");
+    setMinuteRate("");
+    setTransferRate("");
     await load();
   }
 
@@ -196,6 +219,40 @@ export default function TenantsPage() {
                         variant="outline"
                         onClick={() => {
                           setEditing(tenant.id);
+                          setConcurrency("");
+                          setMinuteRate("");
+                          setTransferRate("");
+                          void fetch(`/api/admin/tenants/${tenant.id}/limits`, {
+                            credentials: "include",
+                          })
+                            .then((response) => response.json())
+                            .then(
+                              (limits: {
+                                overrides?: {
+                                  max_concurrent_calls: number | null;
+                                  per_minute_rate_paise: number | null;
+                                  transfer_leg_rate_paise: number | null;
+                                };
+                              }) => {
+                                const overrides = limits.overrides;
+                                if (!overrides) return;
+                                setConcurrency(
+                                  overrides.max_concurrent_calls == null
+                                    ? ""
+                                    : String(overrides.max_concurrent_calls),
+                                );
+                                setMinuteRate(
+                                  overrides.per_minute_rate_paise == null
+                                    ? ""
+                                    : String(overrides.per_minute_rate_paise),
+                                );
+                                setTransferRate(
+                                  overrides.transfer_leg_rate_paise == null
+                                    ? ""
+                                    : String(overrides.transfer_leg_rate_paise),
+                                );
+                              },
+                            );
                           setForm({
                             name: tenant.name,
                             legal_name: tenant.legal_name,
@@ -266,6 +323,41 @@ export default function TenantsPage() {
               ))}
             </select>
           </label>
+          {editing ? (
+            <div className="grid gap-3 rounded-lg border border-border p-3">
+              <h3 className="text-sm font-semibold">Limit overrides</h3>
+              <p className="text-sm text-muted-foreground">
+                Leave a field empty to use the plan. Rates are in paise.
+              </p>
+              <label className="flex flex-col gap-1 text-sm">
+                Max concurrent calls
+                <input
+                  className="h-11 rounded-lg border border-border bg-card px-3"
+                  inputMode="numeric"
+                  value={concurrency}
+                  onChange={(event) => setConcurrency(event.target.value)}
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-sm">
+                Per-minute rate (paise)
+                <input
+                  className="h-11 rounded-lg border border-border bg-card px-3"
+                  inputMode="numeric"
+                  value={minuteRate}
+                  onChange={(event) => setMinuteRate(event.target.value)}
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-sm">
+                Transfer-leg rate (paise)
+                <input
+                  className="h-11 rounded-lg border border-border bg-card px-3"
+                  inputMode="numeric"
+                  value={transferRate}
+                  onChange={(event) => setTransferRate(event.target.value)}
+                />
+              </label>
+            </div>
+          ) : null}
           <Button type="submit">{editing ? "Save changes" : "Create tenant"}</Button>
         </form>
       ) : (

@@ -98,13 +98,6 @@ def _load(session: Session, tenant_id: uuid.UUID) -> tuple[Tenant, str | None]:
     return row
 
 
-@router.get("/admin/plans")
-def list_plans(_user: AuthUser = Depends(require_user)) -> dict[str, list[str]]:
-    with Session(get_admin_engine()) as session:
-        names = list(session.scalars(select(Plan.name).order_by(Plan.name)).all())
-    return {"plans": names}
-
-
 @router.get("/admin/tenants")
 def list_tenants(
     q: str = "",
