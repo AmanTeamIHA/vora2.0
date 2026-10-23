@@ -12,11 +12,13 @@ from vora_api.redis_client import redis_ok
 from vora_api.settings import get_settings
 from vora_api.tenant_context import current_tenant_id
 from vora_api.tenant_routes import router as tenant_router
+from vora_api.user_routes import router as user_router
 
 app = FastAPI(title="Vora API", version="0.1.0")
 app.include_router(auth_router)
 app.include_router(tenant_router)
 app.include_router(plan_router)
+app.include_router(user_router)
 settings = get_settings()
 app.add_middleware(
     CORSMiddleware,

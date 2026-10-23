@@ -12,8 +12,8 @@ export const adminNav: NavItem[] = [
   { label: "Tenants", href: "/admin/tenants", ready: true },
   { label: "Plans & limits", href: "/admin/plans", ready: true },
   { label: "Numbers", href: "/admin/numbers", ready: false },
-  { label: "Users & roles", href: "/admin/users", ready: false },
-  { label: "Audit log", href: "/admin/audit", ready: false },
+  { label: "Users & roles", href: "/admin/users", ready: true },
+  { label: "Audit log", href: "/admin/audit", ready: true },
 ];
 
 export function navIsActive(pathname: string, href: string, items: NavItem[]): boolean {

@@ -39,6 +39,7 @@ def people() -> dict[str, str]:
                 "user_roles, users, tenants CASCADE"
             )
         )
+        connection.execute(text("DELETE FROM plans WHERE name = 'Growth'"))
     owner.dispose()
     owner_secret = pyotp.random_base32()
     reader_secret = pyotp.random_base32()

@@ -87,6 +87,14 @@ def _audit(session: Session, action: str, actor_user_id: uuid.UUID | None) -> No
     session.add(AuditLog(action=action, actor_user_id=actor_user_id, tenant_id=None))
 
 
+def _reject_if_disabled(session: Session, user: User) -> None:
+    if not user.disabled:
+        return
+    _audit(session, "login_failed", user.id)
+    session.commit()
+    raise HTTPException(status_code=403, detail="This account is disabled")
+
+
 def _reject_if_suspended(session: Session, user: User) -> None:
     if not workspace_suspended(session, user.tenant_id):
         return
@@ -132,6 +140,7 @@ def login(body: LoginBody, response: Response) -> dict[str, object]:
             _audit(session, "login_failed", user.id if user else None)
             session.commit()
             raise HTTPException(status_code=401, detail="Email or password is wrong")
+        _reject_if_disabled(session, user)
         _reject_if_suspended(session, user)
         if not user.totp_secret:
             user.totp_secret = pyotp.random_base32()
@@ -180,6 +189,7 @@ def confirm_totp(body: TotpBody, request: Request, response: Response) -> dict[s
             _audit(session, "login_failed", user.id if user else None)
             session.commit()
             raise HTTPException(status_code=401, detail="Code is wrong")
+        _reject_if_disabled(session, user)
         _reject_if_suspended(session, user)
         user.totp_confirmed = True
         roles = _roles_for(session, user.id)
@@ -227,6 +237,7 @@ def refresh(request: Request, response: Response) -> dict[str, bool]:
         user = session.get(User, user_id)
         if user is None:
             raise HTTPException(status_code=401, detail="Sign in required")
+        _reject_if_disabled(session, user)
         _reject_if_suspended(session, user)
         roles = _roles_for(session, user.id)
         email = user.email
