@@ -10,6 +10,8 @@ class Settings(BaseSettings):
 
     app_env: str = "local"
     database_url: str = "postgresql+psycopg://vora:vora@localhost:5432/vora"
+    app_database_url: str = "postgresql+psycopg://vora_app:vora@localhost:5432/vora"
+    admin_database_url: str = "postgresql+psycopg://vora_admin:vora@localhost:5432/vora"
     redis_url: str = "redis://localhost:6379/0"
     cors_origins: str = "http://localhost:3000"
 

@@ -42,19 +42,21 @@ jobs:
       - name: Lint
         working-directory: app/api
         run: uv run ruff check . && uv run ruff format --check .
-      - name: Test
-        working-directory: app/api
-        env:
-          APP_ENV: local
-          DATABASE_URL: postgresql+psycopg://vora:vora@localhost:5432/vora
-          REDIS_URL: redis://localhost:6379/0
-          VORA_INTEGRATION: "1"
-        run: uv run pytest
       - name: Migrate
         working-directory: app/api
         env:
           DATABASE_URL: postgresql+psycopg://vora:vora@localhost:5432/vora
         run: uv run alembic upgrade head
+      - name: Test
+        working-directory: app/api
+        env:
+          APP_ENV: local
+          DATABASE_URL: postgresql+psycopg://vora:vora@localhost:5432/vora
+          APP_DATABASE_URL: postgresql+psycopg://vora_app:vora@localhost:5432/vora
+          ADMIN_DATABASE_URL: postgresql+psycopg://vora_admin:vora@localhost:5432/vora
+          REDIS_URL: redis://localhost:6379/0
+          VORA_INTEGRATION: "1"
+        run: uv run pytest
 
   web:
     runs-on: ubuntu-latest

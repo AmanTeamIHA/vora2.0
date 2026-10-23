@@ -1,0 +1,80 @@
+import uuid
+from datetime import datetime
+
+from sqlalchemy import DateTime, ForeignKey, String, Uuid, text
+from sqlalchemy.orm import Mapped, mapped_column
+
+from vora_api.db import Base
+
+
+def _pk() -> Mapped[uuid.UUID]:
+    return mapped_column(Uuid, primary_key=True, server_default=text("gen_random_uuid()"))
+
+
+def _created() -> Mapped[datetime]:
+    return mapped_column(DateTime(timezone=True), server_default=text("now()"))
+
+
+class Tenant(Base):
+    __tablename__ = "tenants"
+
+    id: Mapped[uuid.UUID] = _pk()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
+    parent_tenant_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid, ForeignKey("tenants.id"), nullable=True
+    )
+    name: Mapped[str] = mapped_column(String(200))
+    created_at: Mapped[datetime] = _created()
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[uuid.UUID] = _pk()
+    tenant_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid, ForeignKey("tenants.id"), nullable=True
+    )
+    email: Mapped[str] = mapped_column(String(320), unique=True)
+    full_name: Mapped[str] = mapped_column(String(200))
+    created_at: Mapped[datetime] = _created()
+
+
+class Role(Base):
+    __tablename__ = "roles"
+
+    id: Mapped[uuid.UUID] = _pk()
+    name: Mapped[str] = mapped_column(String(80), unique=True)
+    scope: Mapped[str] = mapped_column(String(32))
+
+
+class UserRole(Base):
+    __tablename__ = "user_roles"
+
+    id: Mapped[uuid.UUID] = _pk()
+    user_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id"))
+    role_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("roles.id"))
+    tenant_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid, ForeignKey("tenants.id"), nullable=True
+    )
+
+
+class Plan(Base):
+    __tablename__ = "plans"
+
+    id: Mapped[uuid.UUID] = _pk()
+    name: Mapped[str] = mapped_column(String(80), unique=True)
+    created_at: Mapped[datetime] = _created()
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_log"
+
+    id: Mapped[uuid.UUID] = _pk()
+    tenant_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid, ForeignKey("tenants.id"), nullable=True
+    )
+    actor_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid, ForeignKey("users.id"), nullable=True
+    )
+    action: Mapped[str] = mapped_column(String(200))
+    created_at: Mapped[datetime] = _created()
