@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from vora_api.auth_routes import router as auth_router
 from vora_api.db import get_session, postgres_ok
 from vora_api.models import User
+from vora_api.number_routes import router as number_router
 from vora_api.plan_routes import router as plan_router
 from vora_api.redis_client import redis_ok
 from vora_api.settings import get_settings
@@ -19,6 +20,7 @@ app.include_router(auth_router)
 app.include_router(tenant_router)
 app.include_router(plan_router)
 app.include_router(user_router)
+app.include_router(number_router)
 settings = get_settings()
 app.add_middleware(
     CORSMiddleware,
