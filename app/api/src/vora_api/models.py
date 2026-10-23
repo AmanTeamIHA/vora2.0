@@ -47,6 +47,7 @@ class User(Base):
     password_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
     totp_secret: Mapped[str | None] = mapped_column(String(64), nullable=True)
     totp_confirmed: Mapped[bool] = mapped_column(Boolean, server_default=text("false"))
+    disabled: Mapped[bool] = mapped_column(Boolean, server_default=text("false"), default=False)
     created_at: Mapped[datetime] = _created()
 
 
@@ -103,6 +104,17 @@ class TenantInvite(Base):
     token_hash: Mapped[str] = mapped_column(String(64))
     created_at: Mapped[datetime] = _created()
     accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class UserInvite(Base):
+    __tablename__ = "user_invites"
+
+    id: Mapped[uuid.UUID] = _pk()
+    tenant_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, ForeignKey("tenants.id"))
+    email: Mapped[str] = mapped_column(String(320))
+    role_name: Mapped[str] = mapped_column(String(80))
+    token_hash: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = _created()
 
 
 class AuditLog(Base):
