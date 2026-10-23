@@ -18,3 +18,5 @@ docker compose up --build
 - API: http://localhost:8000/healthz
 
 Postgres 16 and Redis 7 come up with the compose file. Credentials in that file are local only.
+
+`GET /users` returns only the rows for the `X-Tenant-Id` header. The API connects as `vora_app` (RLS on). Super Admin reads go through `vora_admin` and write `audit_log`.
