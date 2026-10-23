@@ -1,0 +1,64 @@
+# Local development only. Passwords here are not production secrets.
+# Production credentials live in AWS Secrets Manager.
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: vora
+      POSTGRES_PASSWORD: vora
+      POSTGRES_DB: vora
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vora -d vora"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  api:
+    build: ./app/api
+    ports:
+      - "8000:8000"
+    environment:
+      APP_ENV: local
+      DATABASE_URL: postgresql+psycopg://vora:vora@postgres:5432/vora
+      REDIS_URL: redis://redis:6379/0
+      CORS_ORIGINS: http://localhost:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz')",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  web:
+    build:
+      context: ./app/web
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
