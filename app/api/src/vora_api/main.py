@@ -37,6 +37,36 @@ app.add_middleware(
 )
 
 
+class StripApiPrefix:
+    """ALB forwards /api/* to this process. Local clients already omit that prefix."""
+
+    def __init__(self, asgi_app: object) -> None:
+        self.asgi_app = asgi_app
+
+    async def __call__(self, scope: dict, receive: object, send: object) -> None:
+        if scope.get("type") == "http":
+            path = scope.get("path", "")
+            if path == "/api":
+                scope["path"] = "/"
+            elif path.startswith("/api/"):
+                scope["path"] = path[4:]
+        await self.asgi_app(scope, receive, send)  # type: ignore[misc]
+
+
+app.add_middleware(StripApiPrefix)
+
+
+@app.middleware("http")
+async def require_internal_secret(request: Request, call_next):
+    secret = get_settings().internal_auth_secret
+    path = request.url.path
+    internal = path.startswith("/internal") or path.startswith("/api/internal")
+    if secret and internal:
+        if request.headers.get("x-vora-internal") != secret:
+            return JSONResponse(status_code=401, content={"detail": "Internal auth failed"})
+    return await call_next(request)
+
+
 @app.middleware("http")
 async def bind_tenant(request: Request, call_next):
     token = current_tenant_id.set(request.headers.get("x-tenant-id", "").strip())

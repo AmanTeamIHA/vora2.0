@@ -81,3 +81,30 @@ jobs:
         env:
           NEXT_PUBLIC_API_URL: http://localhost:8000
         run: npm run build
+
+  deploy:
+    needs: [api, web]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::585008088038:role/vora2-github-dev
+          aws-region: ap-south-1
+      - name: Build and push images
+        run: |
+          set -eu
+          reg=585008088038.dkr.ecr.ap-south-1.amazonaws.com
+          aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin "$reg"
+          docker build -t "$reg/vora2-api:${GITHUB_SHA}" -t "$reg/vora2-api:bootstrap" app/api
+          docker build \
+            --build-arg NEXT_PUBLIC_API_URL=https://playground-dev.hellovora.ai/api \
+            -t "$reg/vora2-web:${GITHUB_SHA}" -t "$reg/vora2-web:bootstrap" app/web
+          docker push --all-tags "$reg/vora2-api"
+          docker push --all-tags "$reg/vora2-web"
+          chmod +x infra/scripts/deploy-dev.sh
+          infra/scripts/deploy-dev.sh "$reg/vora2-api:${GITHUB_SHA}" "$reg/vora2-web:${GITHUB_SHA}"
