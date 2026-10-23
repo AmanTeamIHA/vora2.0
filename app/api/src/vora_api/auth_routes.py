@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from vora_api.db import admin_transaction, get_admin_engine
 from vora_api.models import AuditLog, Role, User, UserRole
 from vora_api.settings import get_settings
+from vora_api.tenant_access import workspace_suspended
 
 router = APIRouter()
 _hasher = PasswordHasher()
@@ -86,6 +87,14 @@ def _audit(session: Session, action: str, actor_user_id: uuid.UUID | None) -> No
     session.add(AuditLog(action=action, actor_user_id=actor_user_id, tenant_id=None))
 
 
+def _reject_if_suspended(session: Session, user: User) -> None:
+    if not workspace_suspended(session, user.tenant_id):
+        return
+    _audit(session, "login_failed", user.id)
+    session.commit()
+    raise HTTPException(status_code=403, detail="This workspace is suspended")
+
+
 def require_user(request: Request) -> AuthUser:
     raw = request.cookies.get("vora_access")
     if not raw:
@@ -123,6 +132,7 @@ def login(body: LoginBody, response: Response) -> dict[str, object]:
             _audit(session, "login_failed", user.id if user else None)
             session.commit()
             raise HTTPException(status_code=401, detail="Email or password is wrong")
+        _reject_if_suspended(session, user)
         if not user.totp_secret:
             user.totp_secret = pyotp.random_base32()
         uri = (
@@ -170,6 +180,7 @@ def confirm_totp(body: TotpBody, request: Request, response: Response) -> dict[s
             _audit(session, "login_failed", user.id if user else None)
             session.commit()
             raise HTTPException(status_code=401, detail="Code is wrong")
+        _reject_if_suspended(session, user)
         user.totp_confirmed = True
         roles = _roles_for(session, user.id)
         _audit(session, "login", user.id)
@@ -216,6 +227,7 @@ def refresh(request: Request, response: Response) -> dict[str, bool]:
         user = session.get(User, user_id)
         if user is None:
             raise HTTPException(status_code=401, detail="Sign in required")
+        _reject_if_suspended(session, user)
         roles = _roles_for(session, user.id)
         email = user.email
     settings = get_settings()

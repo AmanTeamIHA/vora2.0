@@ -64,21 +64,35 @@ def admin_transaction(
     action: str,
     actor_user_id: UUID | None = None,
     tenant_id: UUID | None = None,
+    record_audit: bool = True,
 ) -> Iterator[Session]:
-    """vora_admin bypasses RLS. The audit row commits with the work, or not at all."""
+    """vora_admin bypasses RLS. The audit row commits with the work, or not at all.
+
+    Pass record_audit=False when the tenant id is only known after the insert.
+    The caller sets session.info["audit_tenant_id"] before the block exits.
+    """
     from vora_api.models import AuditLog
 
     session = Session(get_admin_engine())
     try:
-        session.add(
-            AuditLog(
-                tenant_id=tenant_id,
-                actor_user_id=actor_user_id,
-                action=action,
+        if record_audit:
+            session.add(
+                AuditLog(
+                    tenant_id=tenant_id,
+                    actor_user_id=actor_user_id,
+                    action=action,
+                )
             )
-        )
-        session.flush()
+            session.flush()
         yield session
+        if not record_audit:
+            session.add(
+                AuditLog(
+                    tenant_id=session.info.get("audit_tenant_id", tenant_id),
+                    actor_user_id=actor_user_id,
+                    action=action,
+                )
+            )
         session.commit()
     except Exception:
         session.rollback()

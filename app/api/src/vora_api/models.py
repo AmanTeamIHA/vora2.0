@@ -24,6 +24,14 @@ class Tenant(Base):
         Uuid, ForeignKey("tenants.id"), nullable=True
     )
     name: Mapped[str] = mapped_column(String(200))
+    slug: Mapped[str | None] = mapped_column(String(80), unique=True)
+    legal_name: Mapped[str] = mapped_column(String(200), server_default=text("''"))
+    gstin: Mapped[str | None] = mapped_column(String(15))
+    contact_name: Mapped[str] = mapped_column(String(200), server_default=text("''"))
+    contact_email: Mapped[str] = mapped_column(String(320), server_default=text("''"))
+    contact_phone: Mapped[str | None] = mapped_column(String(32))
+    status: Mapped[str] = mapped_column(String(32), server_default=text("'active'"))
+    plan_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, ForeignKey("plans.id"))
     created_at: Mapped[datetime] = _created()
 
 
@@ -67,6 +75,18 @@ class Plan(Base):
     id: Mapped[uuid.UUID] = _pk()
     name: Mapped[str] = mapped_column(String(80), unique=True)
     created_at: Mapped[datetime] = _created()
+
+
+class TenantInvite(Base):
+    __tablename__ = "tenant_invites"
+
+    id: Mapped[uuid.UUID] = _pk()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("tenants.id"))
+    email: Mapped[str] = mapped_column(String(320))
+    role_name: Mapped[str] = mapped_column(String(80))
+    token_hash: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = _created()
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class AuditLog(Base):

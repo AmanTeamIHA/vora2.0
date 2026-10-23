@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { adminNav, tenantNav } from "./nav.ts";
+import { adminNav, navIsActive, tenantNav } from "./nav.ts";
 
 describe("role layouts", () => {
   it("keeps Super Admin navigation on /admin", () => {
@@ -13,6 +13,8 @@ describe("role layouts", () => {
       adminNav.some((item) => item.href.startsWith("/t/")),
       false,
     );
+    assert.equal(navIsActive("/admin/tenants", "/admin", adminNav), false);
+    assert.equal(navIsActive("/admin/tenants", "/admin/tenants", adminNav), true);
   });
 
   it("scopes a tenant shell to that tenant", () => {

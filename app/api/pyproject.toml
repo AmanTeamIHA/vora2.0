@@ -42,6 +42,7 @@ select = ["E", "F", "I", "UP", "B"]
 "alembic/versions/*.py" = ["E501"]
 "src/vora_api/main.py" = ["B008"]
 "src/vora_api/auth_routes.py" = ["B008"]
+"src/vora_api/tenant_routes.py" = ["B008"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
