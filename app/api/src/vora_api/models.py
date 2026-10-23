@@ -32,6 +32,9 @@ class Tenant(Base):
     contact_phone: Mapped[str | None] = mapped_column(String(32))
     status: Mapped[str] = mapped_column(String(32), server_default=text("'active'"))
     plan_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, ForeignKey("plans.id"))
+    feature_flags: Mapped[dict[str, bool]] = mapped_column(
+        JSON, server_default=text("'{}'::json"), default=dict
+    )
     created_at: Mapped[datetime] = _created()
 
 
@@ -149,4 +152,5 @@ class AuditLog(Base):
         Uuid, ForeignKey("users.id"), nullable=True
     )
     action: Mapped[str] = mapped_column(String(200))
+    detail: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = _created()

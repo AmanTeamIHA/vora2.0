@@ -1,3 +1,4 @@
+import { PlatformControls } from "@/components/platform-controls";
 import { SessionBar } from "@/components/session-bar";
 import { StackStatus } from "@/components/stack-status";
 
@@ -11,6 +12,7 @@ export default function AdminHome() {
         </p>
       </header>
       <SessionBar />
+      <PlatformControls />
       <StackStatus />
     </div>
   );

@@ -7,6 +7,7 @@ type Entry = {
   action: string;
   actor_email: string | null;
   tenant_name: string | null;
+  detail: string | null;
   created_at: string;
 };
 
@@ -112,6 +113,7 @@ export default function AuditPage() {
               <th className="px-3 py-2 font-medium">Action</th>
               <th className="px-3 py-2 font-medium">Actor</th>
               <th className="px-3 py-2 font-medium">Tenant</th>
+              <th className="px-3 py-2 font-medium">Detail</th>
             </tr>
           </thead>
           <tbody>
@@ -121,6 +123,7 @@ export default function AuditPage() {
                 <td className="px-3 py-2">{entry.action}</td>
                 <td className="px-3 py-2">{entry.actor_email}</td>
                 <td className="px-3 py-2">{entry.tenant_name}</td>
+                <td className="px-3 py-2">{entry.detail}</td>
               </tr>
             ))}
           </tbody>

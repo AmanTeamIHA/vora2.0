@@ -187,6 +187,7 @@ def _entry(row: AuditLog, email: str | None, tenant_name: str | None) -> dict[st
         "actor_email": email,
         "tenant_id": None if row.tenant_id is None else str(row.tenant_id),
         "tenant_name": tenant_name,
+        "detail": row.detail,
         "created_at": row.created_at.isoformat(),
     }
 
@@ -232,7 +233,7 @@ def export_audit(
         )
     buffer = io.StringIO()
     writer = csv.writer(buffer)
-    writer.writerow(["created_at", "action", "actor_email", "tenant_name", "tenant_id"])
+    writer.writerow(["created_at", "action", "actor_email", "tenant_name", "tenant_id", "detail"])
     for row, email, tenant_name in rows:
         writer.writerow(
             [
@@ -241,6 +242,7 @@ def export_audit(
                 email or "",
                 tenant_name or "",
                 "" if row.tenant_id is None else str(row.tenant_id),
+                row.detail or "",
             ]
         )
     return Response(

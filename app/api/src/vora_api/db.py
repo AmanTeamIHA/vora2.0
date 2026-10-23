@@ -64,14 +64,24 @@ def admin_transaction(
     action: str,
     actor_user_id: UUID | None = None,
     tenant_id: UUID | None = None,
+    detail: str | None = None,
     record_audit: bool = True,
 ) -> Iterator[Session]:
     """vora_admin bypasses RLS. The audit row commits with the work, or not at all.
 
     Pass record_audit=False when the tenant id is only known after the insert.
     The caller sets session.info["audit_tenant_id"] before the block exits.
+    An impersonation session stamps the real actor's reason onto the row.
     """
+    from vora_api.impersonation import current_impersonation
     from vora_api.models import AuditLog
+
+    active = current_impersonation.get()
+    if active is not None:
+        if tenant_id is None:
+            tenant_id = UUID(active["tenant_id"])
+        if detail is None:
+            detail = active["reason"]
 
     session = Session(get_admin_engine())
     try:
@@ -81,6 +91,7 @@ def admin_transaction(
                     tenant_id=tenant_id,
                     actor_user_id=actor_user_id,
                     action=action,
+                    detail=detail,
                 )
             )
             session.flush()
@@ -91,6 +102,7 @@ def admin_transaction(
                     tenant_id=session.info.get("audit_tenant_id", tenant_id),
                     actor_user_id=actor_user_id,
                     action=action,
+                    detail=detail,
                 )
             )
         session.commit()

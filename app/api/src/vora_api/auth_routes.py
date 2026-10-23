@@ -262,12 +262,23 @@ def logout(response: Response, user: AuthUser = Depends(require_user)) -> dict[s
     _clear(response, "vora_access")
     _clear(response, "vora_refresh")
     _clear(response, "vora_pending")
+    _clear(response, "vora_impersonate")
     return {"ok": True}
 
 
 @router.get("/auth/me")
-def me(user: AuthUser = Depends(require_user)) -> dict[str, object]:
-    return {"email": user.email, "roles": user.roles, "can_write": user.can_write}
+def me(request: Request, user: AuthUser = Depends(require_user)) -> dict[str, object]:
+    from vora_api.control_routes import impersonation_from_cookie
+
+    body: dict[str, object] = {
+        "email": user.email,
+        "roles": user.roles,
+        "can_write": user.can_write,
+    }
+    active = impersonation_from_cookie(request.cookies.get("vora_impersonate"))
+    if active is not None:
+        body["impersonation"] = active
+    return body
 
 
 @router.post("/admin/user-roles")

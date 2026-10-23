@@ -46,6 +46,7 @@ select = ["E", "F", "I", "UP", "B"]
 "src/vora_api/plan_routes.py" = ["B008"]
 "src/vora_api/user_routes.py" = ["B008"]
 "src/vora_api/number_routes.py" = ["B008"]
+"src/vora_api/control_routes.py" = ["B008"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
