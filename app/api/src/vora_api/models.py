@@ -117,6 +117,27 @@ class UserInvite(Base):
     created_at: Mapped[datetime] = _created()
 
 
+class CallerIdPool(Base):
+    __tablename__ = "caller_id_pools"
+
+    id: Mapped[uuid.UUID] = _pk()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("tenants.id"))
+    name: Mapped[str] = mapped_column(String(80))
+    created_at: Mapped[datetime] = _created()
+
+
+class PhoneNumber(Base):
+    __tablename__ = "phone_numbers"
+
+    id: Mapped[uuid.UUID] = _pk()
+    tenant_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, ForeignKey("tenants.id"))
+    pool_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, ForeignKey("caller_id_pools.id"))
+    e164: Mapped[str] = mapped_column(String(16), unique=True)
+    status: Mapped[str] = mapped_column(String(16), server_default=text("'free'"))
+    inbound_agent_id: Mapped[uuid.UUID | None] = mapped_column(Uuid)
+    created_at: Mapped[datetime] = _created()
+
+
 class AuditLog(Base):
     __tablename__ = "audit_log"
 
