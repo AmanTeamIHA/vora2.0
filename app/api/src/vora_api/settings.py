@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     admin_database_url: str = "postgresql+psycopg://vora_admin:vora@localhost:5432/vora"
     redis_url: str = "redis://localhost:6379/0"
     cors_origins: str = "http://localhost:3000"
+    jwt_secret: str = "local-dev-jwt-secret-not-for-production"
+    access_ttl_minutes: int = 15
+    refresh_ttl_days: int = 14
 
     @property
     def cors_origin_list(self) -> list[str]:

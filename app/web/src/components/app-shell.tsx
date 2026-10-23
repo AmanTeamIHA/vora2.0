@@ -8,7 +8,7 @@ export function AppShell({
   children,
 }: {
   areaLabel: string;
-  actor: string;
+  actor: React.ReactNode;
   items: NavItem[];
   children: React.ReactNode;
 }) {
