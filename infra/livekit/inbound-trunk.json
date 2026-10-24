@@ -1,0 +1,8 @@
+{
+  "name": "vora2-dev-softphone",
+  "metadata": "VORA2-46 dev softphone inbound trunk. Carrier DID and signalling IPs are VORA2-30.",
+  "numbers": ["+910000000000"],
+  "allowed_addresses": ["__SIP_ALLOWED_CIDRS__"],
+  "auth_username": "__SIP_AUTH_USERNAME__",
+  "auth_password": "__SIP_AUTH_PASSWORD__"
+}
