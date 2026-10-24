@@ -53,5 +53,5 @@ select = ["E", "F", "I", "UP", "B"]
 "src/vora_api/integration_routes.py" = ["B008"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
-pythonpath = ["src"]
+testpaths = ["tests", "calls", "../../packages/contracts/tests"]
+pythonpath = ["src", "../../packages/contracts/src"]
