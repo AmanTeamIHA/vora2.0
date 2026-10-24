@@ -16,3 +16,13 @@ output "acm_validation_records" {
 output "cluster_name" {
   value = module.edge.cluster_name
 }
+
+output "livekit_public_ip" {
+  description = "A record for livekit-dev.hellovora.ai. Cloudflare DNS only, grey cloud."
+  value       = module.voice.livekit_public_ip
+}
+
+output "livekit_sip_trunk_cidr_count" {
+  description = "Zero means SIP 5060 and RTP 10000-20000 have no ingress."
+  value       = module.voice.sip_trunk_cidr_count
+}

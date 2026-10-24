@@ -1,0 +1,14 @@
+api_key: "__API_KEY__"
+api_secret: "__API_SECRET__"
+ws_url: ws://127.0.0.1:7880
+insecure: true
+redis:
+  address: __REDIS_ADDRESS__
+disallow_local_storage: true
+# Object keys must be tenants/{tenant_id}/calls/{call_id}. The instance role can write only that prefix.
+storage:
+  s3:
+    region: ap-south-1
+    bucket: __RECORDINGS_BUCKET__
+logging:
+  level: info

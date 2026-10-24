@@ -4,11 +4,13 @@ on:
   pull_request:
     paths:
       - "infra/**"
+      - "voice/livekit/**"
       - ".github/workflows/infra.yml"
   push:
     branches: [main]
     paths:
       - "infra/**"
+      - "voice/livekit/**"
       - ".github/workflows/infra.yml"
 
 concurrency:

@@ -9,5 +9,6 @@ Terraform for the dev console in ap-south-1. Account 585008088038, shared with C
 - Every IAM role this stack creates is named `vora2-*` and carries `vora2-boundary`.
 - Secrets are `vora2/dev/*`. The load balancer accepts Cloudflare IPv4 on 80 and 443 only. `/internal` and `/api/internal` return 404 at the load balancer.
 - Hostname `playground-dev.hellovora.ai`. DNS and Cloudflare Access are outside AWS. Apply waits until the ACM validation CNAME is in Cloudflare.
+- LiveKit is one `c7i.xlarge` in a public subnet (`vora2-dev-livekit`) with its own Elastic IP. TLS is Caddy on the instance for `livekit-dev.hellovora.ai`, also DNS-only in Cloudflare. SIP 5060 and RTP 10000-20000 stay closed until `sip_trunk_cidrs` is set.
 
 Do not apply from a laptop. `infra.yml` plans on a pull request and applies on merge to main, after review.
