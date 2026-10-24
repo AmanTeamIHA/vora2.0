@@ -4,11 +4,16 @@ version = "0.1.0"
 description = "Vora 2.0 LiveKit voice worker"
 requires-python = ">=3.12,<3.13"
 dependencies = [
+    "contracts",
     "livekit-agents==1.8.9",
     "livekit-plugins-sarvam==1.8.9",
     "livekit-plugins-silero==1.8.9",
     "livekit-plugins-turn-detector==1.8.9",
+    "redis>=5.2",
 ]
+
+[tool.uv.sources]
+contracts = { path = "../../packages/contracts" }
 
 [dependency-groups]
 dev = [

@@ -5,3 +5,7 @@ LiveKit Agents process. Sarvam supplies Saaras STT, the `sarvam-105b-conversatio
 On each call it also reads `GET /internal/integrations/sarvam`. That response is the Sarvam API key saved under Admin → Global Settings → Integrations, plus the STT, TTS, and LLM model ids. `SARVAM_API_KEY` in the environment is used only when that setting is empty or the private API cannot be reached. The worker does not need `vora2/dev/sarvam` in Secrets Manager.
 
 Per-turn latency is one CloudWatch EMF line on stdout (`Vora/Voice`) and a data packet on topic `vora.turn`.
+
+The same turn is also a `turn.completed` lifecycle event. After `POST /internal/calls/start` the worker appends `call.created`, then `call.answered`, one `turn.completed` per spoken turn, and `call.ended` (`recording_key` null until egress exists). `call.ringing` is published only when a SIP participant's `sip.callStatus` is `ringing`. Each body is the contracts JSON, validated with `parse_lifecycle_event`, and written to Redis streams `calls:events` and `calls:events:{tenant_id}` in the field `body`. `REDIS_URL` is the same variable the API uses. If it is unset, or Redis errors, the worker logs that and the call continues.
+
+The image build context is the repo root: `docker build -f voice/agent/Dockerfile .`

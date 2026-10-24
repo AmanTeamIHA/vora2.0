@@ -154,7 +154,11 @@ jobs:
           docker build \
             --build-arg NEXT_PUBLIC_API_URL=https://playground-dev.hellovora.ai/api \
             -t "$reg/vora2-web:${DEPLOY_SHA}" -t "$reg/vora2-web:bootstrap" app/web
-          docker build -t "$reg/vora2-agent:${DEPLOY_SHA}" -t "$reg/vora2-agent:bootstrap" voice/agent
+          docker build \
+            -f voice/agent/Dockerfile \
+            -t "$reg/vora2-agent:${DEPLOY_SHA}" \
+            -t "$reg/vora2-agent:bootstrap" \
+            .
           docker push --all-tags "$reg/vora2-api"
           docker push --all-tags "$reg/vora2-web"
           if aws ecr describe-repositories --repository-names vora2-agent --region ap-south-1 >/dev/null 2>&1; then
