@@ -1,29 +1,11 @@
 # Voice worker. The Sarvam API key is saved in Global Settings, not in this task.
 # SARVAM_API_KEY in the environment is an optional fallback only.
-
-resource "aws_service_discovery_private_dns_namespace" "vora" {
-  name = "vora2.local"
-  vpc  = var.vpc_id
-}
-
-resource "aws_service_discovery_service" "api" {
-  name = "api"
-
-  dns_config {
-    namespace_id = aws_service_discovery_private_dns_namespace.vora.id
-
-    dns_records {
-      ttl  = 10
-      type = "A"
-    }
-
-    routing_policy = "MULTIVALUE"
-  }
-
-  health_check_custom_config {
-    failure_threshold = 1
-  }
-}
+#
+# The worker calls the API on port 8080 of the existing vora2-dev load balancer.
+# That listener is open only to this security group. vora2-boundary denies
+# route53:CreateHostedZone, so a Cloud Map private DNS namespace cannot be created.
+# Attaching another load balancer would replace the API service (load_balancer is
+# ForceNew) and drop playground. The public 443 listener still returns 404 for /internal.
 
 resource "aws_ecr_repository" "agent" {
   name                 = "vora2-agent"
@@ -92,7 +74,25 @@ resource "aws_vpc_security_group_egress_rule" "agent_api" {
   ip_protocol                  = "tcp"
   from_port                    = 8000
   to_port                      = 8000
-  description                  = "Private API. Not the public load balancer."
+  description                  = "Direct path to API tasks. The worker uses the private listener."
+}
+
+resource "aws_vpc_security_group_egress_rule" "agent_alb_private" {
+  security_group_id            = aws_security_group.agent.id
+  referenced_security_group_id = var.alb_sg_id
+  ip_protocol                  = "tcp"
+  from_port                    = 8080
+  to_port                      = 8080
+  description                  = "Private API listener on the dev load balancer"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "alb_from_agent" {
+  security_group_id            = var.alb_sg_id
+  referenced_security_group_id = aws_security_group.agent.id
+  ip_protocol                  = "tcp"
+  from_port                    = 8080
+  to_port                      = 8080
+  description                  = "Voice worker only. Not Cloudflare and not the public internet."
 }
 
 resource "aws_vpc_security_group_ingress_rule" "api_from_agent" {
@@ -189,7 +189,7 @@ resource "aws_ecs_task_definition" "agent" {
     image     = "${aws_ecr_repository.agent.repository_url}:bootstrap"
     essential = true
     environment = [
-      { name = "VORA_API_INTERNAL_URL", value = "http://api.vora2.local:8000" },
+      { name = "VORA_API_INTERNAL_URL", value = "http://${aws_lb.dev.dns_name}:8080" },
     ]
     secrets = [
       { name = "LIVEKIT_URL", valueFrom = "${var.livekit_secret_arn}:url::" },
