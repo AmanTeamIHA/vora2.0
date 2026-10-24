@@ -62,6 +62,25 @@ jobs:
           VORA_INTEGRATION: "1"
         run: uv run pytest
 
+  agent:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        working-directory: voice/agent
+        run: uv sync --frozen
+      - name: Lint
+        working-directory: voice/agent
+        run: uv run ruff check . && uv run ruff format --check .
+      - name: Test
+        working-directory: voice/agent
+        run: uv run pytest
+
   web:
     runs-on: ubuntu-latest
     steps:
@@ -102,7 +121,7 @@ jobs:
         run: python -m unittest test_render.py
 
   deploy:
-    needs: [api, web, livekit]
+    needs: [api, web, agent, livekit]
     # A push to dev cannot assume vora2-github-dev: its trust allows this repo's
     # pull_request subject and refs/heads/main, and vora2-boundary denies
     # iam:UpdateAssumeRolePolicy. Merging a pull request into dev still can.
@@ -135,7 +154,16 @@ jobs:
           docker build \
             --build-arg NEXT_PUBLIC_API_URL=https://playground-dev.hellovora.ai/api \
             -t "$reg/vora2-web:${DEPLOY_SHA}" -t "$reg/vora2-web:bootstrap" app/web
+          docker build -t "$reg/vora2-agent:${DEPLOY_SHA}" -t "$reg/vora2-agent:bootstrap" voice/agent
           docker push --all-tags "$reg/vora2-api"
           docker push --all-tags "$reg/vora2-web"
+          if aws ecr describe-repositories --repository-names vora2-agent --region ap-south-1 >/dev/null 2>&1; then
+            docker push --all-tags "$reg/vora2-agent"
+          else
+            echo "vora2-agent repository does not exist yet. Infra apply creates it."
+          fi
           chmod +x infra/scripts/deploy-dev.sh
-          infra/scripts/deploy-dev.sh "$reg/vora2-api:${DEPLOY_SHA}" "$reg/vora2-web:${DEPLOY_SHA}"
+          infra/scripts/deploy-dev.sh \
+            "$reg/vora2-api:${DEPLOY_SHA}" \
+            "$reg/vora2-web:${DEPLOY_SHA}" \
+            "$reg/vora2-agent:${DEPLOY_SHA}"

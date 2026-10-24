@@ -146,6 +146,12 @@ def require_writer(user: AuthUser = Depends(require_user)) -> AuthUser:
 
 @router.post("/auth/login")
 def login(body: LoginBody, response: Response) -> dict[str, object]:
+    # VORA2-27 removed the authenticator on local and dev. Production refuses that path.
+    if not get_settings().password_only_login:
+        raise HTTPException(
+            status_code=403,
+            detail="Password-only sign-in is refused in production",
+        )
     with Session(get_admin_engine()) as session:
         user = session.scalar(select(User).where(User.email == body.email))
         password_ok = False
