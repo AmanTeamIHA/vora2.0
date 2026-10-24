@@ -1,7 +1,7 @@
 """Publish one call's lifecycle to Redis Streams.
 
 The JSON body is the contracts model. The same bytes go to ``calls:events`` and
-``calls:events:{tenant_id}`` under the field ``body``. A Redis failure is logged.
+``calls:events:{tenant_id}`` under the stream field ``data``. A Redis failure is logged.
 It does not propagate into the conversation.
 """
 
@@ -81,7 +81,7 @@ class LifecyclePublisher:
         wrote = False
         for stream in (CALLS_EVENTS_STREAM, tenant_calls_stream(event.tenant_id)):
             try:
-                self._redis.xadd(stream, {"body": body})
+                self._redis.xadd(stream, {"data": body})
             except Exception:
                 logger.exception(
                     "lifecycle publish failed stream=%s event=%s call_id=%s",

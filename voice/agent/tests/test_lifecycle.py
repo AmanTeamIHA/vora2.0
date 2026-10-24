@@ -40,7 +40,8 @@ class FakeRedis:
         self.streams: dict[str, list[str]] = {}
 
     def xadd(self, name: str, fields: dict[str, str]) -> str:
-        self.streams.setdefault(name, []).append(fields["body"])
+        assert set(fields) == {"data"}
+        self.streams.setdefault(name, []).append(fields["data"])
         return "1-0"
 
     def bodies(self, name: str) -> list[str]:
@@ -53,6 +54,7 @@ class BoomRedis:
 
     def xadd(self, name: str, fields: dict[str, str]) -> str:
         self.calls += 1
+        assert set(fields) == {"data"}
         raise ConnectionError("redis down")
 
 
