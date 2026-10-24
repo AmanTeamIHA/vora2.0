@@ -6,6 +6,7 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
     "alembic>=1.14",
     "argon2-cffi>=23",
+    "contracts",
     "cryptography>=50.0.2",
     "fastapi>=0.115",
     "livekit-api==1.2.2",
@@ -35,7 +36,7 @@ packages = ["src/vora_api"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-src = ["src", "tests", "alembic"]
+src = ["src", "tests", "alembic", "calls"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
@@ -55,3 +56,6 @@ select = ["E", "F", "I", "UP", "B"]
 [tool.pytest.ini_options]
 testpaths = ["tests", "calls", "../../packages/contracts/tests"]
 pythonpath = ["src", "../../packages/contracts/src"]
+
+[tool.uv.sources]
+contracts = { path = "../../packages/contracts" }

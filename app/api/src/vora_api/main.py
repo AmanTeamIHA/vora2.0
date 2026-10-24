@@ -1,3 +1,8 @@
+import sys
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+from pathlib import Path
+
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -20,7 +25,29 @@ from vora_api.tenant_context import current_tenant_id
 from vora_api.tenant_routes import router as tenant_router
 from vora_api.user_routes import router as user_router
 
-app = FastAPI(title="Vora API", version="0.1.0")
+
+def _ensure_calls_package() -> None:
+    """Lane C lives in app/api/calls, beside src/. The editable install does not ship it."""
+    root = Path(__file__).resolve().parents[2]
+    entry = str(root)
+    if (root / "calls" / "consumer.py").is_file() and entry not in sys.path:
+        sys.path.append(entry)
+
+
+@asynccontextmanager
+async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    _ensure_calls_package()
+    from calls.consumer import CallEventWorker
+
+    worker = CallEventWorker()
+    worker.start()
+    try:
+        yield
+    finally:
+        worker.stop()
+
+
+app = FastAPI(title="Vora API", version="0.1.0", lifespan=_lifespan)
 app.include_router(auth_router)
 app.include_router(agent_router)
 app.include_router(tenant_router)

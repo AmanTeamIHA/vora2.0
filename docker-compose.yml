@@ -27,7 +27,9 @@ services:
       retries: 12
 
   api:
-    build: ./app/api
+    build:
+      context: .
+      dockerfile: app/api/Dockerfile
     ports:
       - "8000:8000"
     environment:
