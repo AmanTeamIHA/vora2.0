@@ -44,6 +44,7 @@ module "edge" {
   web_sg_id                = module.network.web_sg_id
   permissions_boundary_arn = var.permissions_boundary_arn
   redis_url                = module.data.redis_url
+  redis_sg_id              = module.network.redis_sg_id
   secret_arns              = module.data.secret_arns
   livekit_secret_arn       = module.voice.livekit_secret_arn
 }

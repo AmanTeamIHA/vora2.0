@@ -157,7 +157,7 @@ resource "aws_security_group" "db" {
 
 resource "aws_security_group" "redis" {
   name        = "vora2-redis"
-  description = "Redis accepts the API only"
+  description = "Redis accepts the API, the voice worker, and LiveKit"
   vpc_id      = aws_vpc.this.id
 
   tags = {

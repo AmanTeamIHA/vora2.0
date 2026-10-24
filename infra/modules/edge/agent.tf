@@ -104,6 +104,26 @@ resource "aws_vpc_security_group_ingress_rule" "api_from_agent" {
   description                  = "Voice worker on the private network"
 }
 
+# The agent security group has no wide-open egress. Both sides of the path are
+# required, same as the API: egress here, and ingress on the Redis group.
+resource "aws_vpc_security_group_egress_rule" "agent_redis" {
+  security_group_id            = aws_security_group.agent.id
+  referenced_security_group_id = var.redis_sg_id
+  ip_protocol                  = "tcp"
+  from_port                    = 6379
+  to_port                      = 6379
+  description                  = "ElastiCache Redis"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "redis_from_agent" {
+  security_group_id            = var.redis_sg_id
+  referenced_security_group_id = aws_security_group.agent.id
+  ip_protocol                  = "tcp"
+  from_port                    = 6379
+  to_port                      = 6379
+  description                  = "Voice worker publishes call events"
+}
+
 resource "aws_iam_role" "agent_exec" {
   name                 = "vora2-agent-exec"
   assume_role_policy   = data.aws_iam_policy_document.ecs_trust.json
@@ -188,8 +208,11 @@ resource "aws_ecs_task_definition" "agent" {
     name      = "agent"
     image     = "${aws_ecr_repository.agent.repository_url}:bootstrap"
     essential = true
+    # Same Redis URL as the API task. The service ignores task_definition, so
+    # deploy-dev.sh copies this onto the revision it rolls.
     environment = [
       { name = "VORA_API_INTERNAL_URL", value = "http://${aws_lb.dev.dns_name}:8080" },
+      { name = "REDIS_URL", value = var.redis_url },
     ]
     secrets = [
       { name = "LIVEKIT_URL", valueFrom = "${var.livekit_secret_arn}:url::" },
