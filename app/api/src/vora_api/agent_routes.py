@@ -1,17 +1,24 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from vora_api.auth_routes import AuthUser, require_writer
+from vora_api.auth_routes import AuthUser, require_user, require_writer
 from vora_api.db import admin_transaction, get_admin_engine
+from vora_api.livekit_tokens import mint_test_token
 from vora_api.models import Agent, AgentVersion, Call, Tenant
 from vora_api.plan_routes import require_platform
+from vora_api.settings import get_settings
 
 router = APIRouter()
-_LANGUAGES = frozenset({"hi", "en"})
+_LANGUAGES = {
+    "hi": "hi",
+    "en": "en",
+    "hi-in": "hi-IN",
+    "en-in": "en-IN",
+}
 
 
 class AgentBody(BaseModel):
@@ -25,6 +32,7 @@ class VersionBody(BaseModel):
     language: str
     voice: str = Field(min_length=1, max_length=80)
     tools: list[str] = Field(default_factory=list)
+    languages: list[str] = Field(default_factory=list)
     llm_provider: str = "sarvam"
 
 
@@ -37,10 +45,16 @@ class StartCallBody(BaseModel):
     agent_id: uuid.UUID
 
 
+def _language(value: str) -> str:
+    code = _LANGUAGES.get(value.strip().lower())
+    if code is None:
+        raise HTTPException(status_code=422, detail="Language must be hi, en, hi-IN, or en-IN")
+    return code
+
+
 def _config(body: VersionBody) -> dict[str, object]:
-    language = body.language.strip().lower()
-    if language not in _LANGUAGES:
-        raise HTTPException(status_code=422, detail="Language must be hi or en")
+    language = _language(body.language)
+    languages = [_language(item) for item in body.languages] or [language]
     provider = body.llm_provider.strip().lower()
     if provider != "sarvam":
         raise HTTPException(status_code=422, detail="LLM provider must be sarvam")
@@ -48,10 +62,20 @@ def _config(body: VersionBody) -> dict[str, object]:
         "prompt": body.prompt.strip(),
         "greeting": body.greeting.strip(),
         "language": language,
+        "languages": list(dict.fromkeys(languages)),
         "voice": body.voice.strip(),
         "tools": body.tools,
         "llm_provider": provider,
+        "llm": {"provider": provider},
     }
+
+
+def require_worker_or_platform(request: Request) -> AuthUser | None:
+    """The voice worker authenticates with the internal header. Browsers use a platform session."""
+    secret = get_settings().internal_auth_secret
+    if secret and request.headers.get("x-vora-internal") == secret:
+        return None
+    return require_platform(require_user(request))
 
 
 def _version_view(version: AgentVersion) -> dict[str, object]:
@@ -167,8 +191,103 @@ def deploy_version(
     return {"agent_id": str(agent_id), "deployed_version_id": str(version_id)}
 
 
+def _agent_view(agent: Agent, tenant_name: str, version: AgentVersion | None) -> dict[str, object]:
+    greeting = "" if version is None else str(version.config.get("greeting", ""))
+    return {
+        "id": str(agent.id),
+        "name": agent.name,
+        "tenant_id": str(agent.tenant_id),
+        "tenant_name": tenant_name,
+        "deployed_version_id": None
+        if agent.deployed_version_id is None
+        else str(agent.deployed_version_id),
+        "deployed": agent.deployed_version_id is not None,
+        "created_at": agent.created_at.isoformat(),
+        "greeting": greeting,
+    }
+
+
+@router.get("/admin/agents")
+def list_agents(
+    tenant_id: uuid.UUID | None = None, _: AuthUser = Depends(require_platform)
+) -> dict[str, list[dict[str, object]]]:
+    with Session(get_admin_engine()) as session:
+        query = (
+            select(Agent, Tenant.name)
+            .join(Tenant, Agent.tenant_id == Tenant.id)
+            .order_by(Tenant.name, Agent.name)
+        )
+        if tenant_id is not None:
+            query = query.where(Agent.tenant_id == tenant_id)
+        rows = session.execute(query).all()
+        views = []
+        for agent, tenant_name in rows:
+            version = (
+                None
+                if agent.deployed_version_id is None
+                else session.get(AgentVersion, agent.deployed_version_id)
+            )
+            views.append(_agent_view(agent, tenant_name, version))
+    return {"agents": views}
+
+
+@router.get("/admin/agents/{agent_id}")
+def get_agent(agent_id: uuid.UUID, _: AuthUser = Depends(require_platform)) -> dict[str, object]:
+    with Session(get_admin_engine()) as session:
+        agent = session.get(Agent, agent_id)
+        if agent is None:
+            raise HTTPException(status_code=404, detail="Unknown agent")
+        tenant = session.get(Tenant, agent.tenant_id)
+        version = (
+            None
+            if agent.deployed_version_id is None
+            else session.get(AgentVersion, agent.deployed_version_id)
+        )
+        return _agent_view(agent, "" if tenant is None else tenant.name, version)
+
+
+@router.post("/admin/agents/{agent_id}/test-sessions", status_code=201)
+def test_session(
+    agent_id: uuid.UUID, actor: AuthUser = Depends(require_platform)
+) -> dict[str, str]:
+    settings = get_settings()
+    if not (settings.livekit_url and settings.livekit_api_key and settings.livekit_api_secret):
+        raise HTTPException(status_code=503, detail="LiveKit is not configured")
+    room = f"test-{uuid.uuid4()}"
+    with admin_transaction(
+        action="agent_test_session",
+        actor_user_id=actor.id,
+        detail=f"agent_id={agent_id} room={room}",
+        record_audit=False,
+    ) as session:
+        agent = session.get(Agent, agent_id)
+        if agent is None:
+            raise HTTPException(status_code=404, detail="Unknown agent")
+        if agent.deployed_version_id is None:
+            raise HTTPException(status_code=409, detail="This agent has no deployed version")
+        session.info["audit_tenant_id"] = agent.tenant_id
+        token = mint_test_token(
+            api_key=settings.livekit_api_key,
+            api_secret=settings.livekit_api_secret,
+            identity=actor.email,
+            room=room,
+            tenant_id=agent.tenant_id,
+            agent_id=agent.id,
+        )
+        tenant_id = str(agent.tenant_id)
+    return {
+        "room": room,
+        "url": settings.livekit_url,
+        "token": token,
+        "agent_id": str(agent_id),
+        "tenant_id": tenant_id,
+    }
+
+
 @router.post("/internal/calls/start", status_code=201)
-def start_call(body: StartCallBody, _: AuthUser = Depends(require_platform)) -> dict[str, object]:
+def start_call(
+    body: StartCallBody, _: AuthUser | None = Depends(require_worker_or_platform)
+) -> dict[str, object]:
     with admin_transaction(action="start_call", tenant_id=body.tenant_id) as session:
         agent, version = load_deployed(session, body.agent_id)
         if agent.tenant_id != body.tenant_id:
@@ -192,29 +311,6 @@ def deployed(agent_id: uuid.UUID, _: AuthUser = Depends(require_platform)) -> di
     with Session(get_admin_engine()) as session:
         _agent, version = load_deployed(session, agent_id)
         return _version_view(version)
-
-
-@router.get("/admin/agents")
-def list_agents(
-    tenant_id: uuid.UUID | None = None, _: AuthUser = Depends(require_platform)
-) -> dict[str, list[dict[str, object]]]:
-    with Session(get_admin_engine()) as session:
-        query = select(Agent).order_by(Agent.name)
-        if tenant_id is not None:
-            query = query.where(Agent.tenant_id == tenant_id)
-        agents = session.scalars(query).all()
-    return {
-        "agents": [
-            {
-                "id": str(agent.id),
-                "tenant_id": str(agent.tenant_id),
-                "name": agent.name,
-                "deployed": agent.deployed_version_id is not None,
-                "created_at": agent.created_at.isoformat(),
-            }
-            for agent in agents
-        ]
-    }
 
 
 @router.get("/admin/calls")

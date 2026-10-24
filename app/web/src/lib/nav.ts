@@ -9,16 +9,17 @@ export type NavItem = {
 
 export const adminNav: NavItem[] = [
   { group: "Operations", label: "Control board", href: "/admin", ready: true },
-  { group: "Operations", label: "Live calls", href: "/admin/live", ready: false },
+  { group: "Operations", label: "Live calls", href: "/admin/live", ready: true },
   { group: "Operations", label: "Reports", href: "/admin/reports", ready: false },
   { group: "Customers", label: "Tenants", href: "/admin/tenants", ready: true },
   { group: "Customers", label: "Users & roles", href: "/admin/users", ready: true },
   { group: "Customers", label: "KYC reviews", href: "/admin/kyc", ready: false },
   { group: "Customers", label: "Resellers", href: "/admin/resellers", ready: false },
-  { group: "Voice", label: "Agents", href: "/admin/agents", ready: false },
+  { group: "Voice", label: "Agents", href: "/admin/agents", ready: true },
   { group: "Voice", label: "Numbers", href: "/admin/numbers", ready: true },
   { group: "Voice", label: "Trunk & capacity", href: "/admin/trunk", ready: false },
   { group: "Platform", label: "Plans & limits", href: "/admin/plans", ready: true },
+  { group: "Platform", label: "Global Settings", href: "/admin/settings/integrations", ready: true },
   { group: "Platform", label: "Billing", href: "/admin/billing", ready: false },
   { group: "Platform", label: "Audit log", href: "/admin/audit", ready: true },
 ];

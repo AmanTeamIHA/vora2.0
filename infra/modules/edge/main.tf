@@ -5,6 +5,10 @@ locals {
     { name = "ADMIN_DATABASE_URL", valueFrom = "${var.secret_arns.admin}:url::" },
     { name = "JWT_SECRET", valueFrom = var.secret_arns.jwt },
     { name = "INTERNAL_AUTH_SECRET", valueFrom = var.secret_arns.internal },
+    { name = "INTEGRATION_ENCRYPTION_KEY", valueFrom = var.secret_arns.integration },
+    { name = "LIVEKIT_URL", valueFrom = "${var.livekit_secret_arn}:url::" },
+    { name = "LIVEKIT_API_KEY", valueFrom = "${var.livekit_secret_arn}:api_key::" },
+    { name = "LIVEKIT_API_SECRET", valueFrom = "${var.livekit_secret_arn}:api_secret::" },
   ]
   ecr_keep_10 = {
     rulePriority = 1
@@ -124,6 +128,7 @@ data "aws_iam_policy_document" "exec_logs_and_secrets" {
       "${aws_cloudwatch_log_group.web.arn}:*",
       "${aws_cloudwatch_log_group.migrate.arn}:*",
       "${aws_cloudwatch_log_group.owner.arn}:*",
+      "${aws_cloudwatch_log_group.seed.arn}:*",
     ]
   }
 
@@ -137,6 +142,8 @@ data "aws_iam_policy_document" "exec_logs_and_secrets" {
       var.secret_arns.jwt,
       var.secret_arns.internal,
       var.secret_arns.owner,
+      var.secret_arns.integration,
+      var.livekit_secret_arn,
     ]
   }
 }
@@ -422,6 +429,19 @@ resource "aws_lb_listener_rule" "api_internal" {
   }
 }
 
+# Private API for the voice worker. Port 443 still 404s /internal for the internet.
+# The load balancer security group allows 8080 only from the agent security group.
+resource "aws_lb_listener" "api_private" {
+  load_balancer_arn = aws_lb.dev.arn
+  port              = 8080
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.api.arn
+  }
+}
+
 resource "aws_lb_listener_rule" "api" {
   listener_arn = aws_lb_listener.https.arn
   priority     = 10
@@ -460,7 +480,7 @@ resource "aws_ecs_service" "api" {
     container_port   = 8000
   }
 
-  depends_on = [aws_lb_listener.https]
+  depends_on = [aws_lb_listener.https, aws_lb_listener.api_private]
 
   lifecycle {
     ignore_changes = [task_definition, desired_count]

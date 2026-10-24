@@ -45,6 +45,7 @@ module "edge" {
   permissions_boundary_arn = var.permissions_boundary_arn
   redis_url                = module.data.redis_url
   secret_arns              = module.data.secret_arns
+  livekit_secret_arn       = module.voice.livekit_secret_arn
 }
 
 module "voice" {
