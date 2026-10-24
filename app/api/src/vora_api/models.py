@@ -174,6 +174,22 @@ class Call(Base):
     created_at: Mapped[datetime] = _created()
 
 
+class PlatformSetting(Base):
+    """One row per integration. Platform-wide: there is no tenant_id."""
+
+    __tablename__ = "platform_settings"
+
+    key: Mapped[str] = mapped_column(String(80), primary_key=True)
+    secret_ciphertext: Mapped[str | None] = mapped_column(Text)
+    secret_last4: Mapped[str] = mapped_column(String(4), server_default=text("''"), default="")
+    value: Mapped[dict[str, object]] = mapped_column(
+        JSON, server_default=text("'{}'::json"), default=dict
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("now()")
+    )
+
+
 class AuditLog(Base):
     __tablename__ = "audit_log"
 

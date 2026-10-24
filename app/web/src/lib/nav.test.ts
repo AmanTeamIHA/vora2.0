@@ -13,6 +13,10 @@ describe("role layouts", () => {
       adminNav.some((item) => item.href.startsWith("/t/")),
       false,
     );
+    assert.equal(
+      adminNav.find((item) => item.label === "Global Settings")?.href,
+      "/admin/settings/integrations",
+    );
     assert.equal(navIsActive("/admin/tenants", "/admin", adminNav), false);
     assert.equal(navIsActive("/admin/tenants", "/admin/tenants", adminNav), true);
   });

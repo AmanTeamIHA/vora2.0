@@ -72,7 +72,7 @@ Rule: agent configs are versioned. A call always records which `agent_version` h
 - Compute: EC2 for LiveKit (needs host networking for RTP). ECS or EC2 autoscaling for API, agent workers, Temporal workers. **(approved 23 Oct)**
 - CI/CD: GitHub Actions → build → deploy to dev → manual promote to prod.
 - Observability: CloudWatch + Grafana. Per-call latency metrics (time to first word, STT/LLM/TTS time).
-- Secrets: AWS Secrets Manager / SSM.
+- Secrets: infrastructure secrets (database, JWT, internal auth, the integration encryption key) stay in AWS Secrets Manager / SSM. Integration API keys such as Sarvam are entered in Global Settings and stored encrypted in Postgres.
 
 ---
 

@@ -9,11 +9,12 @@ output "redis_address" {
 
 output "secret_arns" {
   value = {
-    master   = aws_secretsmanager_secret.master.arn
-    app      = aws_secretsmanager_secret.app.arn
-    admin    = aws_secretsmanager_secret.admin.arn
-    jwt      = aws_secretsmanager_secret.jwt.arn
-    internal = aws_secretsmanager_secret.internal.arn
-    owner    = aws_secretsmanager_secret.owner.arn
+    master      = aws_secretsmanager_secret.master.arn
+    app         = aws_secretsmanager_secret.app.arn
+    admin       = aws_secretsmanager_secret.admin.arn
+    jwt         = aws_secretsmanager_secret.jwt.arn
+    internal    = aws_secretsmanager_secret.internal.arn
+    owner       = aws_secretsmanager_secret.owner.arn
+    integration = aws_secretsmanager_secret.integration.arn
   }
 }

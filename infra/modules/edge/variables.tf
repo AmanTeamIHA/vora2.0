@@ -37,3 +37,7 @@ variable "redis_url" {
 variable "secret_arns" {
   type = map(string)
 }
+
+variable "livekit_secret_arn" {
+  type = string
+}

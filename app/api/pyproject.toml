@@ -6,7 +6,9 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
     "alembic>=1.14",
     "argon2-cffi>=23",
+    "cryptography>=50.0.2",
     "fastapi>=0.115",
+    "livekit-api==1.2.2",
     "psycopg[binary]>=3.2",
     "pydantic-settings>=2.6",
     "pyjwt>=2.10",
@@ -48,6 +50,7 @@ select = ["E", "F", "I", "UP", "B"]
 "src/vora_api/number_routes.py" = ["B008"]
 "src/vora_api/control_routes.py" = ["B008"]
 "src/vora_api/agent_routes.py" = ["B008"]
+"src/vora_api/integration_routes.py" = ["B008"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
