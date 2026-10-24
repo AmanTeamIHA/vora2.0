@@ -41,7 +41,7 @@ jobs:
 
   plan:
     needs: [validate]
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
