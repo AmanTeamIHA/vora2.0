@@ -429,6 +429,19 @@ resource "aws_lb_listener_rule" "api_internal" {
   }
 }
 
+# Private API for the voice worker. Port 443 still 404s /internal for the internet.
+# The load balancer security group allows 8080 only from the agent security group.
+resource "aws_lb_listener" "api_private" {
+  load_balancer_arn = aws_lb.dev.arn
+  port              = 8080
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.api.arn
+  }
+}
+
 resource "aws_lb_listener_rule" "api" {
   listener_arn = aws_lb_listener.https.arn
   priority     = 10
@@ -467,11 +480,7 @@ resource "aws_ecs_service" "api" {
     container_port   = 8000
   }
 
-  service_registries {
-    registry_arn = aws_service_discovery_service.api.arn
-  }
-
-  depends_on = [aws_lb_listener.https]
+  depends_on = [aws_lb_listener.https, aws_lb_listener.api_private]
 
   lifecycle {
     ignore_changes = [task_definition, desired_count]
