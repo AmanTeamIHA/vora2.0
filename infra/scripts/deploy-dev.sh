@@ -4,6 +4,7 @@ set -eu
 
 api_image="$1"
 web_image="$2"
+agent_image="${3:-}"
 cluster="vora2-dev"
 region="ap-south-1"
 
@@ -60,3 +61,30 @@ test "$code" = "0"
 aws ecs update-service --cluster "$cluster" --region "$region" --service vora2-api --task-definition vora2-api --desired-count 1 > /dev/null
 aws ecs update-service --cluster "$cluster" --region "$region" --service vora2-web --task-definition vora2-web --desired-count 1 > /dev/null
 aws ecs wait services-stable --cluster "$cluster" --region "$region" --services vora2-api vora2-web
+
+if aws ecs describe-task-definition --task-definition vora2-seed-demo --region "$region" >/dev/null 2>&1; then
+  register vora2-seed-demo "$api_image" seed
+  seed="$(aws ecs run-task \
+    --cluster "$cluster" \
+    --region "$region" \
+    --launch-type FARGATE \
+    --task-definition vora2-seed-demo \
+    --network-configuration "awsvpcConfiguration={subnets=[$subnets],securityGroups=[$groups],assignPublicIp=DISABLED}" \
+    --query 'tasks[0].taskArn' \
+    --output text)"
+  aws ecs wait tasks-stopped --cluster "$cluster" --region "$region" --tasks "$seed"
+  seed_code="$(aws ecs describe-tasks --cluster "$cluster" --region "$region" --tasks "$seed" --query 'tasks[0].containers[0].exitCode' --output text)"
+  echo "seed exit $seed_code"
+  test "$seed_code" = "0"
+fi
+
+if [ -n "$agent_image" ]; then
+  agent_status="$(aws ecs describe-services --cluster "$cluster" --services vora2-agent --region "$region" --query 'services[0].status' --output text || true)"
+  if [ "$agent_status" = "ACTIVE" ]; then
+    register vora2-agent "$agent_image" agent
+    aws ecs update-service --cluster "$cluster" --region "$region" --service vora2-agent --task-definition vora2-agent --desired-count 1 > /dev/null
+    aws ecs wait services-stable --cluster "$cluster" --region "$region" --services vora2-agent
+  else
+    echo "vora2-agent is not active yet ($agent_status). Infra apply creates it."
+  fi
+fi

@@ -58,6 +58,23 @@ jobs:
           VORA_INTEGRATION: "1"
         run: uv run pytest
 
+  agent:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        working-directory: voice/agent
+        run: uv sync --frozen
+      - name: Lint
+        working-directory: voice/agent
+        run: uv run ruff check . && uv run ruff format --check .
+      - name: Test
+        working-directory: voice/agent
+        run: uv run pytest
+
   web:
     runs-on: ubuntu-latest
     steps:
@@ -83,7 +100,7 @@ jobs:
         run: npm run build
 
   deploy:
-    needs: [api, web]
+    needs: [api, web, agent]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
@@ -104,7 +121,12 @@ jobs:
           docker build \
             --build-arg NEXT_PUBLIC_API_URL=https://playground-dev.hellovora.ai/api \
             -t "$reg/vora2-web:${GITHUB_SHA}" -t "$reg/vora2-web:bootstrap" app/web
+          docker build -t "$reg/vora2-agent:${GITHUB_SHA}" -t "$reg/vora2-agent:bootstrap" voice/agent
           docker push --all-tags "$reg/vora2-api"
           docker push --all-tags "$reg/vora2-web"
+          docker push --all-tags "$reg/vora2-agent"
           chmod +x infra/scripts/deploy-dev.sh
-          infra/scripts/deploy-dev.sh "$reg/vora2-api:${GITHUB_SHA}" "$reg/vora2-web:${GITHUB_SHA}"
+          infra/scripts/deploy-dev.sh \
+            "$reg/vora2-api:${GITHUB_SHA}" \
+            "$reg/vora2-web:${GITHUB_SHA}" \
+            "$reg/vora2-agent:${GITHUB_SHA}"

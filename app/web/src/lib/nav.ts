@@ -15,7 +15,7 @@ export const adminNav: NavItem[] = [
   { group: "Customers", label: "Users & roles", href: "/admin/users", ready: true },
   { group: "Customers", label: "KYC reviews", href: "/admin/kyc", ready: false },
   { group: "Customers", label: "Resellers", href: "/admin/resellers", ready: false },
-  { group: "Voice", label: "Agents", href: "/admin/agents", ready: false },
+  { group: "Voice", label: "Agents", href: "/admin/agents", ready: true },
   { group: "Voice", label: "Numbers", href: "/admin/numbers", ready: true },
   { group: "Voice", label: "Trunk & capacity", href: "/admin/trunk", ready: false },
   { group: "Platform", label: "Plans & limits", href: "/admin/plans", ready: true },

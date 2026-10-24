@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000"
     jwt_secret: str = "local-dev-jwt-secret-not-for-production"
     internal_auth_secret: str = ""
+    livekit_url: str = ""
+    livekit_api_key: str = ""
+    livekit_api_secret: str = ""
     access_ttl_minutes: int = 15
     refresh_ttl_days: int = 14
 
