@@ -19,15 +19,17 @@ export function AppShell({
 }) {
   return (
     <div className="flex min-h-screen bg-[#F5F5F7] font-sans text-[#1D1D1F] antialiased">
-      <aside className="flex w-full shrink-0 flex-col border-[#E8E8ED] bg-[#FBFBFD] px-3 py-[18px] md:w-[248px] md:border-r">
+      <aside className="flex w-full shrink-0 flex-col border-[#E8E8ED] bg-[#FBFBFD] px-3 py-[18px] md:sticky md:top-0 md:h-screen md:w-[248px] md:border-r">
         <div className="flex items-center gap-2.5 px-2.5 pb-[22px] pt-1.5">
           <VoraMark />
           <span className="text-[19px] font-semibold tracking-[-0.4px]">vora</span>
           <span className="text-xs text-[#86868B]">{areaLabel}</span>
         </div>
-        <Suspense fallback={null}>
-          <SideNav items={items} />
-        </Suspense>
+        <div className="md:min-h-0 md:flex-1 md:overflow-y-auto">
+          <Suspense fallback={null}>
+            <SideNav items={items} />
+          </Suspense>
+        </div>
         <AccountChip fallback={actor} />
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
