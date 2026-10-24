@@ -18,9 +18,23 @@ register() {
   family="$1"
   image="$2"
   container="$3"
+  env_name="${4:-}"
+  env_value="${5:-}"
   aws ecs describe-task-definition --task-definition "$family" --region "$region" --query taskDefinition > /tmp/vora-td.json
-  jq --arg image "$image" --arg container "$container" '
-    .containerDefinitions |= map(if .name == $container then .image = $image else . end)
+  jq --arg image "$image" --arg container "$container" --arg env_name "$env_name" --arg env_value "$env_value" '
+    .containerDefinitions |= map(
+      if .name == $container then
+        .image = $image
+        | if $env_name != "" then
+            .environment = (
+              ((.environment // []) | map(select(.name != $env_name)))
+              + [{name: $env_name, value: $env_value}]
+            )
+          else .
+          end
+      else .
+      end
+    )
     | del(
         .taskDefinitionArn,
         .revision,
@@ -81,7 +95,19 @@ fi
 if [ -n "$agent_image" ]; then
   agent_status="$(aws ecs describe-services --cluster "$cluster" --services vora2-agent --region "$region" --query 'services[0].status' --output text || true)"
   if [ "$agent_status" = "ACTIVE" ]; then
-    register vora2-agent "$agent_image" agent
+    # Apply registers a new vora2-agent revision, and the service ignores
+    # task_definition, so this image swap is what the worker actually runs.
+    # Copy REDIS_URL from the API task. That is the same URL, including when
+    # this job registers before the infra apply lands the new revision.
+    redis_url="$(aws ecs describe-task-definition --task-definition vora2-api --region "$region" --query "taskDefinition.containerDefinitions[?name=='api'] | [0].environment[?name=='REDIS_URL'] | [0].value" --output text)"
+    case "$redis_url" in
+      redis://*) ;;
+      *)
+        echo "vora2-api task has no REDIS_URL ($redis_url)."
+        exit 1
+        ;;
+    esac
+    register vora2-agent "$agent_image" agent REDIS_URL "$redis_url"
     aws ecs update-service --cluster "$cluster" --region "$region" --service vora2-agent --task-definition vora2-agent --desired-count 1 > /dev/null
     aws ecs wait services-stable --cluster "$cluster" --region "$region" --services vora2-agent
   else

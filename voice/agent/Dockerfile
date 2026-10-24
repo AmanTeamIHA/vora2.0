@@ -2,11 +2,15 @@ FROM python:3.12-slim
 
 COPY --from=ghcr.io/astral-sh/uv:0.13.5 /uv /uvx /bin/
 
+# Build from the repo root: docker build -f voice/agent/Dockerfile .
+# contracts is a path dependency and is not inside voice/agent/.
+COPY packages/contracts /packages/contracts
+
 WORKDIR /app
-COPY pyproject.toml uv.lock ./
+COPY voice/agent/pyproject.toml voice/agent/uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 
-COPY src ./src
+COPY voice/agent/src ./src
 RUN uv sync --frozen --no-dev
 RUN uv run --no-dev python -m vora_agent.worker download-files
 

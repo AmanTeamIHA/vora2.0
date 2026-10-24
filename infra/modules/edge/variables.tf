@@ -34,6 +34,10 @@ variable "redis_url" {
   type = string
 }
 
+variable "redis_sg_id" {
+  type = string
+}
+
 variable "secret_arns" {
   type = map(string)
 }
