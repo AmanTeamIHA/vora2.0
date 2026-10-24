@@ -21,7 +21,7 @@ Postgres 16 and Redis 7 come up with the compose file. Credentials in that file 
 
 `GET /users` returns only the rows for the `X-Tenant-Id` header. The API connects as `vora_app` (RLS on). Super Admin reads go through `vora_admin` and write `audit_log`.
 
-Super Admin sign-in is `/admin/login` (password, then authenticator code). Create the first owner with `OWNER_EMAIL` and `OWNER_PASSWORD` set, then:
+Super Admin sign-in is `/admin/login`. Password-only sign-in works when `APP_ENV` is `local` or `dev`. Any other value, including `prod`, refuses it. Create the first owner with `OWNER_EMAIL` and `OWNER_PASSWORD` set, then:
 
 ```bash
 cd app/api && uv run python -m vora_api.bootstrap_owner

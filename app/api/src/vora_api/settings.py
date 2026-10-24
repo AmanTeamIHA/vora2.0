@@ -32,6 +32,11 @@ class Settings(BaseSettings):
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
 
+    @property
+    def password_only_login(self) -> bool:
+        """Password-only sign-in (VORA2-27) is local and dev only. Off in production."""
+        return self.app_env.strip().lower() in {"local", "dev"}
+
 
 @lru_cache
 def get_settings() -> Settings:

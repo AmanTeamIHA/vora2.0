@@ -3,6 +3,7 @@ import os
 import pyotp
 import pytest
 from fastapi.testclient import TestClient
+from httpx import Response
 from sqlalchemy import create_engine, select, text
 from sqlalchemy.orm import Session
 
@@ -111,6 +112,54 @@ def test_owner_grant_is_audited_and_logout_clears_session(accounts: dict[str, st
     with Session(get_admin_engine()) as session:
         actions = set(session.scalars(select(AuditLog.action)).all())
     assert {"login", "grant_role", "logout"} <= actions
+
+
+def _set_app_env(monkeypatch: pytest.MonkeyPatch, app_env: str) -> None:
+    monkeypatch.setenv("APP_ENV", app_env)
+    get_settings.cache_clear()
+
+
+def _set_cookie_headers(response: Response) -> str:
+    return " ".join(response.headers.get_list("set-cookie"))
+
+
+def test_production_refuses_a_valid_password_only_login(
+    accounts: dict[str, str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    assert accounts["owner_secret"]
+    _set_app_env(monkeypatch, "prod")
+    try:
+        client = TestClient(app)
+        response = client.post(
+            "/auth/login",
+            json={"email": "owner@example.com", "password": "owner-password"},
+        )
+        assert response.status_code == 403
+        assert response.json()["detail"] == "Password-only sign-in is refused in production"
+        assert "vora_access=" not in _set_cookie_headers(response)
+        with Session(get_admin_engine()) as session:
+            actions = list(session.scalars(select(AuditLog.action)).all())
+        assert "login" not in actions
+    finally:
+        get_settings.cache_clear()
+
+
+def test_dev_allows_password_only_login(
+    accounts: dict[str, str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    assert accounts["owner_secret"]
+    _set_app_env(monkeypatch, "dev")
+    try:
+        client = TestClient(app)
+        response = client.post(
+            "/auth/login",
+            json={"email": "owner@example.com", "password": "owner-password"},
+        )
+        assert response.status_code == 200
+        assert response.json()["ok"] is True
+        assert "vora_access=" in _set_cookie_headers(response)
+    finally:
+        get_settings.cache_clear()
 
 
 def test_wrong_password_is_rejected(accounts: dict[str, str]) -> None:
