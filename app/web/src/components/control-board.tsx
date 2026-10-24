@@ -128,7 +128,7 @@ export function ControlBoard() {
                 rows.map((tenant) => (
                   <tr key={tenant.id} className="text-right tabular-nums hover:bg-[#FAFAFA]">
                     <td className="border-t border-[#F0F0F2] py-3 text-left font-medium">
-                      <Link href="/admin/tenants" className="text-[#1D1D1F] no-underline">
+                      <Link href={`/admin/tenants/${tenant.id}`} className="text-[#1D1D1F] no-underline">
                         {tenant.name}
                       </Link>
                     </td>

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { AccountChip } from "@/components/account-chip";
 import { AskVora } from "@/components/ask-vora";
 import { ShellHeader } from "@/components/shell-header";
@@ -24,7 +25,9 @@ export function AppShell({
           <span className="text-[19px] font-semibold tracking-[-0.4px]">vora</span>
           <span className="text-xs text-[#86868B]">{areaLabel}</span>
         </div>
-        <SideNav items={items} />
+        <Suspense fallback={null}>
+          <SideNav items={items} />
+        </Suspense>
         <AccountChip fallback={actor} />
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
