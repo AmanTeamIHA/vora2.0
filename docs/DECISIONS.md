@@ -9,3 +9,4 @@
 | 2026-10-23 | Start fresh, Vora-OLD archived | Avoid confusion |
 | 2026-10-23 | Stack: Next.js+TS web, Python FastAPI backend, Redis Streams events, ECS compute (LiveKit on EC2), Postgres analytics first, reseller layer deferred | One backend language, fewer systems |
 | 2026-10-23 | Global later = separate AWS account, servers, product | Keep India build simple |
+| 2026-10-24 | Integration API keys are entered in Global Settings and stored encrypted in Postgres. `INTEGRATION_ENCRYPTION_KEY` stays in Secrets Manager. The Sarvam key is not a deploy prerequisite. | Same pattern as CallAtlas: Owner and Platform Admin rotate keys in the app |

@@ -28,3 +28,7 @@ cd app/api && uv run python -m vora_api.bootstrap_owner
 ```
 
 The command prints a one-time `otpauth://` URI. Add it to an authenticator app. Do not commit the password.
+
+## Global Settings
+
+Owner and Platform Admin set the Sarvam API key at `/admin/settings/integrations`. The key is encrypted in `platform_settings` and is write-only: the page shows the last four characters and never the full key again. `INTEGRATION_ENCRYPTION_KEY` seals it. The local default works only when `APP_ENV` is `local` or `test`; dev and prod inject a generated key. `SARVAM_API_KEY` is an optional fallback when no key has been saved. The voice worker reads the saved key from the private API on each call.

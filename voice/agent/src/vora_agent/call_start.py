@@ -18,6 +18,14 @@ class StartedCall:
     config: AgentConfig
 
 
+def require_private_base(base_url: str) -> str:
+    parsed = urlparse(base_url)
+    host = (parsed.hostname or "").lower()
+    if parsed.scheme != "http" or host in _PUBLIC_HOSTS:
+        raise PublicApiRejected(base_url)
+    return base_url.rstrip("/")
+
+
 def start_call(
     base_url: str,
     secret: str,
@@ -25,12 +33,9 @@ def start_call(
     *,
     post: Callable[..., dict[str, object]],
 ) -> StartedCall:
-    parsed = urlparse(base_url)
-    host = (parsed.hostname or "").lower()
-    if parsed.scheme != "http" or host in _PUBLIC_HOSTS:
-        raise PublicApiRejected(base_url)
+    root = require_private_base(base_url)
     body = post(
-        f"{base_url.rstrip('/')}/internal/calls/start",
+        f"{root}/internal/calls/start",
         json={"tenant_id": metadata["tenant_id"], "agent_id": metadata["agent_id"]},
         headers={"x-vora-internal": secret},
     )

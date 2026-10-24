@@ -26,3 +26,9 @@ def test_voice_plan_uses_saaras_bulbul_and_speaks_the_greeting_first() -> None:
     assert plan.turn_detection == "livekit-multilingual"
     assert plan.barge_in is True
     assert "end_call" in plan.tools
+    custom = voice_plan(
+        config, llm_model="sarvam-30b", stt_model="saaras:v3", tts_model="bulbul:v2"
+    )
+    assert custom.llm_model == "sarvam-30b"
+    assert custom.stt_model == "saaras:v3"
+    assert custom.tts_model == "bulbul:v2"

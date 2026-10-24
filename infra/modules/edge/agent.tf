@@ -1,10 +1,5 @@
-# Voice worker. The Sarvam secret is created empty on purpose.
-# Put {"SARVAM_API_KEY": "..."} in vora2/dev/sarvam before the task can start.
-# Do not apply this until that key exists.
-
-resource "aws_secretsmanager_secret" "sarvam" {
-  name = "vora2/dev/sarvam"
-}
+# Voice worker. The Sarvam API key is saved in Global Settings, not in this task.
+# SARVAM_API_KEY in the environment is an optional fallback only.
 
 resource "aws_service_discovery_private_dns_namespace" "vora" {
   name = "vora2.local"
@@ -151,7 +146,6 @@ data "aws_iam_policy_document" "agent_exec" {
     sid     = "Secrets"
     actions = ["secretsmanager:GetSecretValue"]
     resources = [
-      aws_secretsmanager_secret.sarvam.arn,
       var.livekit_secret_arn,
       var.secret_arns.internal,
     ]
@@ -163,7 +157,6 @@ data "aws_iam_policy_document" "agent_task" {
     sid     = "ReadVoiceSecrets"
     actions = ["secretsmanager:GetSecretValue"]
     resources = [
-      aws_secretsmanager_secret.sarvam.arn,
       var.livekit_secret_arn,
       var.secret_arns.internal,
     ]
@@ -199,7 +192,6 @@ resource "aws_ecs_task_definition" "agent" {
       { name = "VORA_API_INTERNAL_URL", value = "http://api.vora2.local:8000" },
     ]
     secrets = [
-      { name = "SARVAM_API_KEY", valueFrom = "${aws_secretsmanager_secret.sarvam.arn}:SARVAM_API_KEY::" },
       { name = "LIVEKIT_URL", valueFrom = "${var.livekit_secret_arn}:url::" },
       { name = "LIVEKIT_API_KEY", valueFrom = "${var.livekit_secret_arn}:api_key::" },
       { name = "LIVEKIT_API_SECRET", valueFrom = "${var.livekit_secret_arn}:api_secret::" },

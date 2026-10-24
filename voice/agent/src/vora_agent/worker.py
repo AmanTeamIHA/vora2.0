@@ -27,6 +27,7 @@ from livekit.plugins.turn_detector.multilingual import MultilingualModel
 from vora_agent.call_start import StartedCall, start_call
 from vora_agent.metrics import TurnTracker, turn_emf
 from vora_agent.pacing import install_sarvam_pacing
+from vora_agent.sarvam_credentials import SarvamRuntime, load_sarvam_runtime
 from vora_agent.voice_plan import VoicePlan, voice_plan
 
 logger = logging.getLogger("vora.agent")
@@ -62,19 +63,30 @@ class Receptionist(Agent):
         return "ended"
 
 
-def _session(plan: VoicePlan) -> AgentSession:
+def _get(url: str, *, headers: dict[str, str]) -> dict[str, Any]:
+    request = urllib.request.Request(url, headers=headers, method="GET")
+    with urllib.request.urlopen(request, timeout=10) as response:
+        body = json.loads(response.read().decode())
+    if not isinstance(body, dict):
+        raise ValueError("sarvam settings returned a non-object")
+    return body
+
+
+def _session(plan: VoicePlan, api_key: str) -> AgentSession:
     return AgentSession(
         vad=silero.VAD.load(),
         stt=sarvam.STT(
             language=plan.stt_language,
             model=plan.stt_model,
             mode=plan.stt_mode,
+            api_key=api_key,
         ),
-        llm=sarvam.LLM(model=plan.llm_model),
+        llm=sarvam.LLM(model=plan.llm_model, api_key=api_key),
         tts=sarvam.TTS(
             target_language_code=plan.tts_language,
             model=plan.tts_model,
             speaker=plan.tts_speaker,
+            api_key=api_key,
         ),
         turn_handling=TurnHandlingOptions(
             turn_detection=MultilingualModel(),
@@ -111,6 +123,17 @@ async def entrypoint(ctx: JobContext) -> None:
 
     tenant_id = str(metadata["tenant_id"])
     agent_id = str(metadata["agent_id"])
+    runtime = await asyncio.to_thread(
+        load_sarvam_runtime,
+        os.environ.get("VORA_API_INTERNAL_URL", ""),
+        os.environ.get("INTERNAL_AUTH_SECRET", ""),
+        env_key=os.environ.get("SARVAM_API_KEY", ""),
+        get=_get,
+    )
+    if not runtime.api_key:
+        logger.error("sarvam_key_missing")
+        return
+    logger.info("sarvam_key_loaded source=%s", runtime.source)
     started = await asyncio.to_thread(
         start_call,
         os.environ["VORA_API_INTERNAL_URL"],
@@ -118,18 +141,24 @@ async def entrypoint(ctx: JobContext) -> None:
         {"tenant_id": tenant_id, "agent_id": agent_id},
         post=_post,
     )
-    await _run_call(ctx, started, tenant_id=tenant_id, agent_id=agent_id)
+    await _run_call(ctx, started, runtime, tenant_id=tenant_id, agent_id=agent_id)
 
 
 async def _run_call(
     ctx: JobContext,
     started: StartedCall,
+    runtime: SarvamRuntime,
     *,
     tenant_id: str,
     agent_id: str,
 ) -> None:
-    plan = voice_plan(started.config)
-    session = _session(plan)
+    plan = voice_plan(
+        started.config,
+        stt_model=runtime.stt_model,
+        tts_model=runtime.tts_model,
+        llm_model=runtime.llm_model,
+    )
+    session = _session(plan, runtime.api_key)
     tracker = TurnTracker()
 
     def _on_metrics(event: object) -> None:

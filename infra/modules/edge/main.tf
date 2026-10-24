@@ -5,6 +5,7 @@ locals {
     { name = "ADMIN_DATABASE_URL", valueFrom = "${var.secret_arns.admin}:url::" },
     { name = "JWT_SECRET", valueFrom = var.secret_arns.jwt },
     { name = "INTERNAL_AUTH_SECRET", valueFrom = var.secret_arns.internal },
+    { name = "INTEGRATION_ENCRYPTION_KEY", valueFrom = var.secret_arns.integration },
     { name = "LIVEKIT_URL", valueFrom = "${var.livekit_secret_arn}:url::" },
     { name = "LIVEKIT_API_KEY", valueFrom = "${var.livekit_secret_arn}:api_key::" },
     { name = "LIVEKIT_API_SECRET", valueFrom = "${var.livekit_secret_arn}:api_secret::" },
@@ -141,6 +142,7 @@ data "aws_iam_policy_document" "exec_logs_and_secrets" {
       var.secret_arns.jwt,
       var.secret_arns.internal,
       var.secret_arns.owner,
+      var.secret_arns.integration,
       var.livekit_secret_arn,
     ]
   }

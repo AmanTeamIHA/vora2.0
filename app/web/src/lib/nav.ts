@@ -19,6 +19,7 @@ export const adminNav: NavItem[] = [
   { group: "Voice", label: "Numbers", href: "/admin/numbers", ready: true },
   { group: "Voice", label: "Trunk & capacity", href: "/admin/trunk", ready: false },
   { group: "Platform", label: "Plans & limits", href: "/admin/plans", ready: true },
+  { group: "Platform", label: "Global Settings", href: "/admin/settings/integrations", ready: true },
   { group: "Platform", label: "Billing", href: "/admin/billing", ready: false },
   { group: "Platform", label: "Audit log", href: "/admin/audit", ready: true },
 ];

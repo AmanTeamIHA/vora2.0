@@ -23,6 +23,11 @@ resource "random_password" "internal" {
   special = false
 }
 
+resource "random_password" "integration" {
+  length  = 48
+  special = false
+}
+
 resource "aws_db_subnet_group" "dev" {
   name       = "vora2-dev"
   subnet_ids = var.private_subnet_ids
@@ -111,6 +116,10 @@ resource "aws_secretsmanager_secret" "owner" {
   name = "vora2/dev/owner"
 }
 
+resource "aws_secretsmanager_secret" "integration" {
+  name = "vora2/dev/integration-encryption-key"
+}
+
 resource "aws_secretsmanager_secret_version" "master" {
   secret_id = aws_secretsmanager_secret.master.id
   secret_string = jsonencode({
@@ -146,6 +155,11 @@ resource "aws_secretsmanager_secret_version" "jwt" {
 resource "aws_secretsmanager_secret_version" "internal" {
   secret_id     = aws_secretsmanager_secret.internal.id
   secret_string = random_password.internal.result
+}
+
+resource "aws_secretsmanager_secret_version" "integration" {
+  secret_id     = aws_secretsmanager_secret.integration.id
+  secret_string = random_password.integration.result
 }
 
 resource "aws_secretsmanager_secret_version" "owner" {
