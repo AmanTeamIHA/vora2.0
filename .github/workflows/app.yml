@@ -2,8 +2,10 @@ name: app
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, closed]
+    branches: [dev, main]
   push:
-    branches: [main]
+    branches: [dev]
 
 jobs:
   api:
@@ -33,6 +35,8 @@ jobs:
           --health-retries 12
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
       - uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.12"
@@ -62,6 +66,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
@@ -82,29 +88,54 @@ jobs:
           NEXT_PUBLIC_API_URL: http://localhost:8000
         run: npm run build
 
+  livekit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: test_render
+        working-directory: voice/livekit
+        run: python -m unittest test_render.py
+
   deploy:
-    needs: [api, web]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [api, web, livekit]
+    # A push to dev cannot assume vora2-github-dev: its trust allows this repo's
+    # pull_request subject and refs/heads/main, and vora2-boundary denies
+    # iam:UpdateAssumeRolePolicy. Merging a pull request into dev still can.
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.action == 'closed' &&
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.base.ref == 'dev' &&
+      github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     permissions:
       id-token: write
       contents: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::585008088038:role/vora2-github-dev
           aws-region: ap-south-1
       - name: Build and push images
+        env:
+          DEPLOY_SHA: ${{ github.event.pull_request.merge_commit_sha }}
         run: |
           set -eu
           reg=585008088038.dkr.ecr.ap-south-1.amazonaws.com
           aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin "$reg"
-          docker build -t "$reg/vora2-api:${GITHUB_SHA}" -t "$reg/vora2-api:bootstrap" app/api
+          docker build -t "$reg/vora2-api:${DEPLOY_SHA}" -t "$reg/vora2-api:bootstrap" app/api
           docker build \
             --build-arg NEXT_PUBLIC_API_URL=https://playground-dev.hellovora.ai/api \
-            -t "$reg/vora2-web:${GITHUB_SHA}" -t "$reg/vora2-web:bootstrap" app/web
+            -t "$reg/vora2-web:${DEPLOY_SHA}" -t "$reg/vora2-web:bootstrap" app/web
           docker push --all-tags "$reg/vora2-api"
           docker push --all-tags "$reg/vora2-web"
           chmod +x infra/scripts/deploy-dev.sh
-          infra/scripts/deploy-dev.sh "$reg/vora2-api:${GITHUB_SHA}" "$reg/vora2-web:${GITHUB_SHA}"
+          infra/scripts/deploy-dev.sh "$reg/vora2-api:${DEPLOY_SHA}" "$reg/vora2-web:${DEPLOY_SHA}"

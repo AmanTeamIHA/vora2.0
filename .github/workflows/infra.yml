@@ -2,12 +2,14 @@ name: infra
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, closed]
+    branches: [dev, main]
     paths:
       - "infra/**"
       - "voice/livekit/**"
       - ".github/workflows/infra.yml"
   push:
-    branches: [main]
+    branches: [dev]
     paths:
       - "infra/**"
       - "voice/livekit/**"
@@ -18,8 +20,28 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.10.5"
+      - name: terraform fmt
+        working-directory: infra
+        run: terraform fmt -check -recursive
+      - name: terraform init
+        working-directory: infra/envs/dev
+        run: terraform init -backend=false -input=false
+      - name: terraform validate
+        working-directory: infra/envs/dev
+        run: terraform validate -no-color
+
   plan:
-    if: github.event_name == 'pull_request'
+    needs: [validate]
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -29,6 +51,8 @@ jobs:
         working-directory: infra/envs/dev
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.10.5"
@@ -40,7 +64,15 @@ jobs:
       - run: terraform plan -input=false -lock-timeout=5m -no-color
 
   apply:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [validate]
+    # Same OIDC limit as the app deploy: a merged pull request into dev can
+    # assume the role, and a push to refs/heads/dev cannot.
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.action == 'closed' &&
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.base.ref == 'dev' &&
+      github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -50,6 +82,8 @@ jobs:
         working-directory: infra/envs/dev
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.10.5"
@@ -58,4 +92,7 @@ jobs:
           role-to-assume: arn:aws:iam::585008088038:role/vora2-github-dev
           aws-region: ap-south-1
       - run: terraform init -input=false
-      - run: terraform apply -input=false -auto-approve -lock-timeout=5m
+      - name: Save plan
+        run: terraform plan -input=false -lock-timeout=5m -no-color -out=tfplan
+      - name: Apply saved plan
+        run: terraform apply -input=false -lock-timeout=5m tfplan
