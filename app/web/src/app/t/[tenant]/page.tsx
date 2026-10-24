@@ -7,7 +7,7 @@ export default function TenantHome({ params }: PageProps<"/t/[tenant]">) {
       {params.then(({ tenant }) => (
         <div className="flex flex-col gap-6">
           <header>
-            <h1 className="text-2xl font-semibold">{tenant}</h1>
+            <h1 className="text-[32px] leading-none font-semibold tracking-[-0.8px]">{tenant}</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               Tenant workspace. This shell only links inside /t/{tenant}.
             </p>

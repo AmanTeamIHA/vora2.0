@@ -28,14 +28,14 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-md flex-col gap-4">
-      <h1 className="text-2xl font-semibold">Sign in</h1>
-      <p className="text-sm text-muted-foreground">Sign in with your email and password.</p>
+    <div className="mx-auto flex w-full max-w-md flex-col gap-4 rounded-2xl bg-white p-8 shadow-[0_0_0_1px_rgba(0,0,0,0.04)]">
+      <h1 className="text-[32px] leading-none font-semibold tracking-[-0.8px]">Sign in</h1>
+      <p className="text-sm text-[#6E6E73]">Sign in with your email and password.</p>
       <form className="flex flex-col gap-3" onSubmit={submitPassword}>
         <label className="flex flex-col gap-1 text-sm">
           Email
           <input
-            className="h-11 rounded-lg border border-border bg-card px-3"
+            className="h-11 rounded-[10px] border border-[#E8E8ED] bg-white px-3"
             type="email"
             autoComplete="username"
             value={email}
@@ -46,7 +46,7 @@ export default function LoginPage() {
         <label className="flex flex-col gap-1 text-sm">
           Password
           <input
-            className="h-11 rounded-lg border border-border bg-card px-3"
+            className="h-11 rounded-[10px] border border-[#E8E8ED] bg-white px-3"
             type="password"
             autoComplete="current-password"
             value={password}
@@ -56,7 +56,7 @@ export default function LoginPage() {
         </label>
         <Button type="submit">Sign in</Button>
       </form>
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? <p className="text-sm text-[#D70015]">{error}</p> : null}
     </div>
   );
 }

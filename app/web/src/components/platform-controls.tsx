@@ -67,8 +67,8 @@ export function PlatformControls() {
   }
 
   return (
-    <section className="flex flex-col gap-4 rounded-lg border border-border p-4">
-      <h2 className="text-lg font-semibold">Controls</h2>
+    <section className="flex flex-col gap-4 rounded-2xl bg-white p-5 shadow-[0_0_0_1px_rgba(0,0,0,0.04)]">
+      <h2 className="text-[17px] font-semibold tracking-[-0.2px]">Controls</h2>
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm">
           Global outbound kill switch is {globalOn ? "on. New outbound calls are stopped." : "off."}
