@@ -306,6 +306,55 @@ def deployed(agent_id: uuid.UUID, _: AuthUser = Depends(require_platform)) -> di
         return _version_view(version)
 
 
+@router.get("/admin/agents")
+def list_agents(
+    tenant_id: uuid.UUID | None = None, _: AuthUser = Depends(require_platform)
+) -> dict[str, list[dict[str, object]]]:
+    with Session(get_admin_engine()) as session:
+        query = select(Agent).order_by(Agent.name)
+        if tenant_id is not None:
+            query = query.where(Agent.tenant_id == tenant_id)
+        agents = session.scalars(query).all()
+    return {
+        "agents": [
+            {
+                "id": str(agent.id),
+                "tenant_id": str(agent.tenant_id),
+                "name": agent.name,
+                "deployed": agent.deployed_version_id is not None,
+                "created_at": agent.created_at.isoformat(),
+            }
+            for agent in agents
+        ]
+    }
+
+
+@router.get("/admin/calls")
+def list_calls(
+    tenant_id: uuid.UUID | None = None, _: AuthUser = Depends(require_platform)
+) -> dict[str, list[dict[str, str]]]:
+    with Session(get_admin_engine()) as session:
+        query = (
+            select(Call, Agent.name)
+            .join(Agent, Agent.id == Call.agent_id)
+            .order_by(Call.created_at.desc())
+            .limit(50)
+        )
+        if tenant_id is not None:
+            query = query.where(Call.tenant_id == tenant_id)
+        rows = session.execute(query).all()
+    return {
+        "calls": [
+            {
+                "id": str(call.id),
+                "agent_name": agent_name,
+                "created_at": call.created_at.isoformat(),
+            }
+            for call, agent_name in rows
+        ]
+    }
+
+
 @router.get("/admin/calls/{call_id}")
 def get_call(call_id: uuid.UUID, _: AuthUser = Depends(require_platform)) -> dict[str, str]:
     with Session(get_admin_engine()) as session:
