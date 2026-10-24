@@ -49,38 +49,38 @@
 }
 
 :root {
-  --background: #f6f7f9;
-  --foreground: #0e1726;
+  --background: #f5f5f7;
+  --foreground: #1d1d1f;
   --card: #ffffff;
-  --card-foreground: #0e1726;
+  --card-foreground: #1d1d1f;
   --popover: #ffffff;
-  --popover-foreground: #0e1726;
-  --primary: #0f766e;
+  --popover-foreground: #1d1d1f;
+  --primary: #1d1d1f;
   --primary-foreground: #ffffff;
-  --secondary: #e9ecf1;
-  --secondary-foreground: #0e1726;
-  --muted: #e9ecf1;
-  --muted-foreground: #556070;
-  --accent: #e6f4f1;
-  --accent-foreground: #0b5a54;
-  --destructive: #b42318;
-  --border: #e3e6eb;
-  --input: #e3e6eb;
-  --ring: #0f766e;
+  --secondary: #f0f0f2;
+  --secondary-foreground: #1d1d1f;
+  --muted: #f0f0f2;
+  --muted-foreground: #6e6e73;
+  --accent: #ebebed;
+  --accent-foreground: #1d1d1f;
+  --destructive: #d70015;
+  --border: #e8e8ed;
+  --input: #e8e8ed;
+  --ring: #1d1d1f;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
-  --sidebar: #0e1726;
-  --sidebar-foreground: #c9d1dc;
-  --sidebar-primary: #0f766e;
+  --sidebar: #fbfbfd;
+  --sidebar-foreground: #424245;
+  --sidebar-primary: #1d1d1f;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1e2a3d;
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #1e2a3d;
-  --sidebar-ring: #0f766e;
+  --sidebar-accent: #ffffff;
+  --sidebar-accent-foreground: #1d1d1f;
+  --sidebar-border: #e8e8ed;
+  --sidebar-ring: #1d1d1f;
 }
 
 .dark {
@@ -126,5 +126,30 @@
   }
   html {
     @apply font-sans;
+  }
+  h1 {
+    letter-spacing: -0.8px;
+  }
+}
+
+.vora-nav:hover {
+  background: #ebebed;
+}
+
+.vora-card {
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.vora-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vora-card {
+    transition: none;
+  }
+  .vora-card:hover {
+    transform: none;
   }
 }

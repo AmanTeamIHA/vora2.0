@@ -166,14 +166,14 @@ export default function NumbersPage() {
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <h1 className="text-2xl font-semibold">Numbers</h1>
+        <h1 className="text-[32px] leading-none font-semibold tracking-[-0.8px]">Numbers</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Indian DIDs in E.164. Inbound dispatch reads the assigned tenant from here.
         </p>
       </header>
-      <div className="overflow-x-auto rounded-lg border border-border">
+      <div className="overflow-x-auto rounded-2xl bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.04)]">
         <table className="w-full min-w-[720px] text-left text-sm">
-          <thead className="bg-card text-muted-foreground">
+          <thead className="text-xs font-normal text-[#86868B]">
             <tr>
               <th className="px-3 py-2 font-medium">DID</th>
               <th className="px-3 py-2 font-medium">Status</th>

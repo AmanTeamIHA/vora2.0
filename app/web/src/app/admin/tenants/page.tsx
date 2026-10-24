@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
 type Tenant = {
@@ -31,7 +32,14 @@ const emptyForm = {
 export default function TenantsPage() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [plans, setPlans] = useState<string[]>(["Starter"]);
-  const [query, setQuery] = useState("");
+  const params = useSearchParams();
+  const urlQuery = params.get("q") ?? "";
+  const [query, setQuery] = useState(urlQuery);
+  const [appliedUrlQuery, setAppliedUrlQuery] = useState(urlQuery);
+  if (urlQuery !== appliedUrlQuery) {
+    setAppliedUrlQuery(urlQuery);
+    setQuery(urlQuery);
+  }
   const [status, setStatus] = useState("");
   const [plan, setPlan] = useState("");
   const [form, setForm] = useState(emptyForm);
@@ -146,7 +154,7 @@ export default function TenantsPage() {
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <h1 className="text-2xl font-semibold">Tenants</h1>
+        <h1 className="text-[32px] leading-none font-semibold tracking-[-0.8px]">Tenants</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Create a workspace, then suspend it to block sign-in and new calls.
         </p>
@@ -188,9 +196,9 @@ export default function TenantsPage() {
           ))}
         </select>
       </form>
-      <div className="overflow-x-auto rounded-lg border border-border">
+      <div className="overflow-x-auto rounded-2xl bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.04)]">
         <table className="w-full min-w-[720px] text-left text-sm">
-          <thead className="bg-card text-muted-foreground">
+          <thead className="text-xs font-normal text-[#86868B]">
             <tr>
               <th className="px-3 py-2 font-medium">Name</th>
               <th className="px-3 py-2 font-medium">Plan</th>

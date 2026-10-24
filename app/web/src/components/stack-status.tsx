@@ -1,10 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 type Ready = {
   status: string;
@@ -21,7 +17,7 @@ export function StackStatus() {
 
     async function load() {
       try {
-        const response = await fetch(`${apiUrl}/healthz`);
+        const response = await fetch("/api/healthz");
         const body = (await response.json()) as { status?: string };
         if (!cancelled) setHealth(response.ok ? (body.status ?? "down") : "down");
       } catch {
@@ -29,7 +25,7 @@ export function StackStatus() {
       }
 
       try {
-        const response = await fetch(`${apiUrl}/readyz`);
+        const response = await fetch("/api/readyz");
         const body = (await response.json()) as Ready;
         if (!cancelled) setReady(body);
       } catch {
@@ -43,21 +39,27 @@ export function StackStatus() {
     };
   }, []);
 
+  const dots = [
+    { name: "API", ok: health === "ok" },
+    { name: "Postgres", ok: Boolean(ready?.postgres) },
+    { name: "Redis", ok: Boolean(ready?.redis) },
+  ];
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Local stack</CardTitle>
-        <CardDescription>API at {apiUrl}</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-wrap gap-2">
-        <Badge variant={health === "ok" ? "default" : "outline"}>API {health}</Badge>
-        <Badge variant={ready?.postgres ? "default" : "outline"}>
-          Postgres {ready ? (ready.postgres ? "ok" : "down") : "checking"}
-        </Badge>
-        <Badge variant={ready?.redis ? "default" : "outline"}>
-          Redis {ready ? (ready.redis ? "ok" : "down") : "checking"}
-        </Badge>
-      </CardContent>
-    </Card>
+    <section className="rounded-2xl bg-white px-[22px] py-5 shadow-[0_0_0_1px_rgba(0,0,0,0.04)]">
+      <h2 className="text-[17px] font-semibold tracking-[-0.2px]">System</h2>
+      <div className="mt-3 flex flex-wrap gap-x-3.5 gap-y-2 text-[13px] text-[#424245]">
+        {dots.map((item) => (
+          <span key={item.name} className="flex items-center gap-1.5">
+            <span
+              className="size-1.5 rounded-full"
+              style={{ background: item.ok ? "#34C759" : "#FF3B30" }}
+            />
+            {item.name}
+            {item.ok ? "" : " down"}
+          </span>
+        ))}
+      </div>
+    </section>
   );
 }

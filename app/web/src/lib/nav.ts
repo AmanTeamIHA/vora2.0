@@ -4,16 +4,23 @@ export type NavItem = {
   label: string;
   href: string;
   ready: boolean;
+  group?: string;
 };
 
 export const adminNav: NavItem[] = [
-  { label: "Overview", href: "/admin", ready: true },
-  { label: "Live calls", href: "/admin/live", ready: false },
-  { label: "Tenants", href: "/admin/tenants", ready: true },
-  { label: "Plans & limits", href: "/admin/plans", ready: true },
-  { label: "Numbers", href: "/admin/numbers", ready: true },
-  { label: "Users & roles", href: "/admin/users", ready: true },
-  { label: "Audit log", href: "/admin/audit", ready: true },
+  { group: "Operations", label: "Control board", href: "/admin", ready: true },
+  { group: "Operations", label: "Live calls", href: "/admin/live", ready: false },
+  { group: "Operations", label: "Reports", href: "/admin/reports", ready: false },
+  { group: "Customers", label: "Tenants", href: "/admin/tenants", ready: true },
+  { group: "Customers", label: "Users & roles", href: "/admin/users", ready: true },
+  { group: "Customers", label: "KYC reviews", href: "/admin/kyc", ready: false },
+  { group: "Customers", label: "Resellers", href: "/admin/resellers", ready: false },
+  { group: "Voice", label: "Agents", href: "/admin/agents", ready: false },
+  { group: "Voice", label: "Numbers", href: "/admin/numbers", ready: true },
+  { group: "Voice", label: "Trunk & capacity", href: "/admin/trunk", ready: false },
+  { group: "Platform", label: "Plans & limits", href: "/admin/plans", ready: true },
+  { group: "Platform", label: "Billing", href: "/admin/billing", ready: false },
+  { group: "Platform", label: "Audit log", href: "/admin/audit", ready: true },
 ];
 
 export function navIsActive(pathname: string, href: string, items: NavItem[]): boolean {
