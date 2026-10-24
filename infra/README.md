@@ -11,4 +11,4 @@ Terraform for the dev console in ap-south-1. Account 585008088038, shared with C
 - Hostname `playground-dev.hellovora.ai`. DNS and Cloudflare Access are outside AWS. Apply waits until the ACM validation CNAME is in Cloudflare.
 - LiveKit is one `c7i.xlarge` in a public subnet (`vora2-dev-livekit`) with its own Elastic IP. TLS is Caddy on the instance for `livekit-dev.hellovora.ai`, also DNS-only in Cloudflare. SIP 5060 and RTP 10000-20000 stay closed until `sip_trunk_cidrs` is set.
 
-Do not apply from a laptop. `infra.yml` plans on a pull request and applies on merge to main, after review.
+Do not apply from a laptop. `infra.yml` plans on a pull request and applies the saved plan on push to `dev`. A push to `main` does not apply.
