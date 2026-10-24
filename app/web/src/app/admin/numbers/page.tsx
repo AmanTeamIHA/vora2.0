@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 type NumberRow = {
@@ -187,7 +188,15 @@ export default function NumbersPage() {
               <tr key={row.id} className="border-t border-border">
                 <td className="px-3 py-2">{row.e164}</td>
                 <td className="px-3 py-2">{row.status}</td>
-                <td className="px-3 py-2">{row.tenant_name ?? "—"}</td>
+                <td className="px-3 py-2">
+                  {row.tenant_id ? (
+                    <Link href={`/admin/tenants/${row.tenant_id}`} className="text-[#1D1D1F] no-underline">
+                      {row.tenant_name}
+                    </Link>
+                  ) : (
+                    "—"
+                  )}
+                </td>
                 <td className="px-3 py-2">{row.pool_name ?? "—"}</td>
                 {canWrite ? (
                   <td className="px-3 py-2">

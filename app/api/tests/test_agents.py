@@ -138,6 +138,13 @@ def test_deployed_version_is_what_the_next_call_loads(people: dict[str, str]) ->
         assert nxt.json()["agent_version_id"] == second_id
         assert nxt.json()["config"]["greeting"] == "Namaste, doosri"
         assert owner.get(f"/admin/calls/{first_call}").json()["greeting"] == "Namaste, pehli"
+        agents = owner.get("/admin/agents", params={"tenant_id": tenant_id})
+        assert agents.status_code == 200
+        assert agents.json()["agents"][0]["name"] == "Reception"
+        assert agents.json()["agents"][0]["deployed"] is True
+        calls = owner.get("/admin/calls", params={"tenant_id": tenant_id})
+        assert calls.status_code == 200
+        assert len(calls.json()["calls"]) == 2
         rejected = _version("Nope")
         rejected["llm_provider"] = "openai"
         assert owner.post(f"/admin/agents/{agent_id}/versions", json=rejected).status_code == 422
