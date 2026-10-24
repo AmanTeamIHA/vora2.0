@@ -201,18 +201,25 @@ def _agent_view(agent: Agent, tenant_name: str, version: AgentVersion | None) ->
         "deployed_version_id": None
         if agent.deployed_version_id is None
         else str(agent.deployed_version_id),
+        "deployed": agent.deployed_version_id is not None,
+        "created_at": agent.created_at.isoformat(),
         "greeting": greeting,
     }
 
 
 @router.get("/admin/agents")
-def list_agents(_: AuthUser = Depends(require_platform)) -> dict[str, list[dict[str, object]]]:
+def list_agents(
+    tenant_id: uuid.UUID | None = None, _: AuthUser = Depends(require_platform)
+) -> dict[str, list[dict[str, object]]]:
     with Session(get_admin_engine()) as session:
-        rows = session.execute(
+        query = (
             select(Agent, Tenant.name)
             .join(Tenant, Agent.tenant_id == Tenant.id)
             .order_by(Tenant.name, Agent.name)
-        ).all()
+        )
+        if tenant_id is not None:
+            query = query.where(Agent.tenant_id == tenant_id)
+        rows = session.execute(query).all()
         views = []
         for agent, tenant_name in rows:
             version = (
@@ -304,29 +311,6 @@ def deployed(agent_id: uuid.UUID, _: AuthUser = Depends(require_platform)) -> di
     with Session(get_admin_engine()) as session:
         _agent, version = load_deployed(session, agent_id)
         return _version_view(version)
-
-
-@router.get("/admin/agents")
-def list_agents(
-    tenant_id: uuid.UUID | None = None, _: AuthUser = Depends(require_platform)
-) -> dict[str, list[dict[str, object]]]:
-    with Session(get_admin_engine()) as session:
-        query = select(Agent).order_by(Agent.name)
-        if tenant_id is not None:
-            query = query.where(Agent.tenant_id == tenant_id)
-        agents = session.scalars(query).all()
-    return {
-        "agents": [
-            {
-                "id": str(agent.id),
-                "tenant_id": str(agent.tenant_id),
-                "name": agent.name,
-                "deployed": agent.deployed_version_id is not None,
-                "created_at": agent.created_at.isoformat(),
-            }
-            for agent in agents
-        ]
-    }
 
 
 @router.get("/admin/calls")
