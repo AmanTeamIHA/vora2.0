@@ -150,7 +150,7 @@ jobs:
           set -eu
           reg=585008088038.dkr.ecr.ap-south-1.amazonaws.com
           aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin "$reg"
-          docker build -t "$reg/vora2-api:${DEPLOY_SHA}" -t "$reg/vora2-api:bootstrap" app/api
+          docker build -f app/api/Dockerfile -t "$reg/vora2-api:${DEPLOY_SHA}" -t "$reg/vora2-api:bootstrap" .
           docker build \
             --build-arg NEXT_PUBLIC_API_URL=https://playground-dev.hellovora.ai/api \
             -t "$reg/vora2-web:${DEPLOY_SHA}" -t "$reg/vora2-web:bootstrap" app/web
