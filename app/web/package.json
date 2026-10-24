@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --test src/lib/nav.test.ts src/lib/guard.test.ts"
+    "test": "node --experimental-strip-types --test src/lib/nav.test.ts src/lib/guard.test.ts admin/live-calls.test.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

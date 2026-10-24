@@ -9,7 +9,7 @@ export type NavItem = {
 
 export const adminNav: NavItem[] = [
   { group: "Operations", label: "Control board", href: "/admin", ready: true },
-  { group: "Operations", label: "Live calls", href: "/admin/live", ready: false },
+  { group: "Operations", label: "Live calls", href: "/admin/live", ready: true },
   { group: "Operations", label: "Reports", href: "/admin/reports", ready: false },
   { group: "Customers", label: "Tenants", href: "/admin/tenants", ready: true },
   { group: "Customers", label: "Users & roles", href: "/admin/users", ready: true },
