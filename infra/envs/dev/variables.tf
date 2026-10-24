@@ -26,3 +26,38 @@ variable "permissions_boundary_arn" {
   type        = string
   default     = "arn:aws:iam::585008088038:policy/vora2-boundary"
 }
+
+variable "livekit_hostname" {
+  description = "LiveKit API hostname. The Cloudflare record is not created here."
+  type        = string
+  default     = "livekit-dev.hellovora.ai"
+}
+
+variable "sip_trunk_cidrs" {
+  description = "Trunk CIDRs allowed to reach SIP 5060 and RTP 10000-20000. Empty closes both."
+  type        = list(string)
+  default     = []
+}
+
+variable "livekit_nightly_stop_enabled" {
+  description = "Stop vora2-dev-livekit overnight and start it in the morning."
+  type        = bool
+  default     = true
+}
+
+variable "livekit_stop_cron" {
+  description = "When to stop LiveKit. Default 23:30 IST."
+  type        = string
+  default     = "cron(30 23 * * ? *)"
+}
+
+variable "livekit_start_cron" {
+  description = "When to start LiveKit. Default 08:00 IST."
+  type        = string
+  default     = "cron(0 8 * * ? *)"
+}
+
+variable "livekit_schedule_timezone" {
+  type    = string
+  default = "Asia/Kolkata"
+}

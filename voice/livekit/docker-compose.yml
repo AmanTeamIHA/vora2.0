@@ -1,0 +1,63 @@
+name: vora2-livekit
+
+services:
+  caddy:
+    image: caddy:2.11.7
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - /opt/vora2/livekit/run/Caddyfile:/etc/caddy/Caddyfile:ro
+      - /var/lib/caddy/data:/data
+      - /var/lib/caddy/config:/config
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ap-south-1
+        awslogs-group: /vora2/dev/livekit
+        awslogs-stream: caddy
+        awslogs-create-group: "false"
+
+  livekit:
+    image: livekit/livekit-server:v1.13.10
+    network_mode: host
+    restart: unless-stopped
+    command: ["--config", "/etc/livekit.yaml"]
+    volumes:
+      - /opt/vora2/livekit/run/livekit.yaml:/etc/livekit.yaml:ro
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ap-south-1
+        awslogs-group: /vora2/dev/livekit
+        awslogs-stream: livekit-server
+        awslogs-create-group: "false"
+
+  sip:
+    image: livekit/sip:v1.21.0
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - /opt/vora2/livekit/run/sip.yaml:/sip/config.yaml:ro
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ap-south-1
+        awslogs-group: /vora2/dev/livekit
+        awslogs-stream: livekit-sip
+        awslogs-create-group: "false"
+
+  egress:
+    image: livekit/egress:v1.15.0
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      EGRESS_CONFIG_FILE: /etc/egress.yaml
+    volumes:
+      - /opt/vora2/livekit/run/egress.yaml:/etc/egress.yaml:ro
+    logging:
+      driver: awslogs
+      options:
+        awslogs-region: ap-south-1
+        awslogs-group: /vora2/dev/livekit
+        awslogs-stream: livekit-egress
+        awslogs-create-group: "false"

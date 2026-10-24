@@ -1,0 +1,77 @@
+#!/bin/bash
+set -euo pipefail
+
+install -d -m 0755 \
+  /opt/vora2/livekit/templates \
+  /opt/vora2/livekit/run \
+  /var/lib/caddy/data \
+  /var/lib/caddy/config \
+  /usr/libexec/docker/cli-plugins
+
+ok=0
+for _ in 1 2 3 4 5 6; do
+  if dnf install -y docker; then
+    ok=1
+    break
+  fi
+  sleep 5
+done
+test "$ok" = 1
+
+systemctl enable --now docker
+curl -fsSL -o /usr/libexec/docker/cli-plugins/docker-compose \
+  https://github.com/docker/compose/releases/download/v2.40.3/docker-compose-linux-x86_64
+chmod 0755 /usr/libexec/docker/cli-plugins/docker-compose
+docker compose version
+
+cat > /etc/sysctl.d/99-vora2-livekit.conf <<'EOF'
+net.core.rmem_max = 25000000
+net.core.wmem_max = 25000000
+EOF
+sysctl --system >/dev/null
+
+cat > /opt/vora2/livekit/templates/livekit.yaml <<'EOF'
+${livekit_yaml}
+EOF
+cat > /opt/vora2/livekit/templates/sip.yaml <<'EOF'
+${sip_yaml}
+EOF
+cat > /opt/vora2/livekit/templates/egress.yaml <<'EOF'
+${egress_yaml}
+EOF
+cat > /opt/vora2/livekit/templates/Caddyfile <<'EOF'
+${caddyfile}
+EOF
+cat > /opt/vora2/livekit/docker-compose.yml <<'EOF'
+${compose_yaml}
+EOF
+cat > /opt/vora2/livekit/render.py <<'EOF'
+${render_py}
+EOF
+chmod 0755 /opt/vora2/livekit/render.py
+
+cat > /etc/systemd/system/vora2-livekit.service <<'EOF'
+[Unit]
+Description=Vora LiveKit
+After=docker.service network-online.target
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+Environment=VORA_NODE_IP=${node_ip}
+Environment=VORA_REDIS_ADDRESS=${redis_address}
+Environment=VORA_LIVEKIT_HOSTNAME=${hostname}
+Environment=VORA_RECORDINGS_BUCKET=${recordings_bucket}
+Environment=AWS_DEFAULT_REGION=ap-south-1
+ExecStart=/usr/bin/python3 /opt/vora2/livekit/render.py
+ExecStop=-/usr/bin/docker compose -f /opt/vora2/livekit/docker-compose.yml down
+TimeoutStartSec=1200
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+systemctl enable --now vora2-livekit.service

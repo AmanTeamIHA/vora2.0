@@ -1,0 +1,21 @@
+api_key: "__API_KEY__"
+api_secret: "__API_SECRET__"
+ws_url: ws://127.0.0.1:7880
+redis:
+  address: __REDIS_ADDRESS__
+sip_port: 5060
+rtp_port: 10000-20000
+# use_external_ip and nat_1_to_1_ip cannot both be set. The EIP is 1:1 NAT.
+use_external_ip: false
+nat_1_to_1_ip: __NODE_IP__
+# false keeps DTMF as RFC 2833 telephone-event instead of in-band audio.
+audio_dtmf: false
+codecs:
+  PCMA: true
+  PCMU: true
+  telephone-event: true
+  G722: false
+  opus: false
+  AMR-WB: false
+logging:
+  level: info

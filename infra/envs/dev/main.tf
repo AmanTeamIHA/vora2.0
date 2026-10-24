@@ -46,3 +46,19 @@ module "edge" {
   redis_url                = module.data.redis_url
   secret_arns              = module.data.secret_arns
 }
+
+module "voice" {
+  source = "../../modules/voice"
+
+  vpc_id                   = module.network.vpc_id
+  public_subnet_id         = module.network.public_subnet_ids[0]
+  redis_sg_id              = module.network.redis_sg_id
+  redis_address            = module.data.redis_address
+  permissions_boundary_arn = var.permissions_boundary_arn
+  hostname                 = var.livekit_hostname
+  sip_trunk_cidrs          = var.sip_trunk_cidrs
+  nightly_stop_enabled     = var.livekit_nightly_stop_enabled
+  stop_cron                = var.livekit_stop_cron
+  start_cron               = var.livekit_start_cron
+  schedule_timezone        = var.livekit_schedule_timezone
+}
