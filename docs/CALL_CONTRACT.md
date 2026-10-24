@@ -68,7 +68,7 @@ from contracts import (
 
 ## Tables
 
-Migration `0009_call_lifecycle` (revises `0008_agents`). Every table has `tenant_id` and forced row-level security: `tenant_id::text = current_setting('app.tenant_id', true)`. `vora_app` does not bypass RLS. `vora_admin` does.
+Migration `0010_call_lifecycle` (revises `0009_integrations`). Every table has `tenant_id` and forced row-level security: `tenant_id::text = current_setting('app.tenant_id', true)`. `vora_app` does not bypass RLS. `vora_admin` does.
 
 `calls` already exists. The migration adds:
 

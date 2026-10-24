@@ -1,7 +1,7 @@
 """Call lifecycle columns, turns, and recordings.
 
-Revision ID: 0009_call_lifecycle
-Revises: 0008_agents
+Revision ID: 0010_call_lifecycle
+Revises: 0009_integrations
 Create Date: 2026-10-24
 
 """
@@ -9,8 +9,8 @@ Create Date: 2026-10-24
 import sqlalchemy as sa
 from alembic import op
 
-revision = "0009_call_lifecycle"
-down_revision = "0008_agents"
+revision = "0010_call_lifecycle"
+down_revision = "0009_integrations"
 branch_labels = None
 depends_on = None
 
