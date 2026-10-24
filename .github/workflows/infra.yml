@@ -2,12 +2,13 @@ name: infra
 
 on:
   pull_request:
+    branches: [dev, main]
     paths:
       - "infra/**"
       - "voice/livekit/**"
       - ".github/workflows/infra.yml"
   push:
-    branches: [main]
+    branches: [dev]
     paths:
       - "infra/**"
       - "voice/livekit/**"
@@ -18,7 +19,25 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.10.5"
+      - name: terraform fmt
+        working-directory: infra
+        run: terraform fmt -check -recursive
+      - name: terraform init
+        working-directory: infra/envs/dev
+        run: terraform init -backend=false -input=false
+      - name: terraform validate
+        working-directory: infra/envs/dev
+        run: terraform validate -no-color
+
   plan:
+    needs: [validate]
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:
@@ -40,7 +59,8 @@ jobs:
       - run: terraform plan -input=false -lock-timeout=5m -no-color
 
   apply:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [validate]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -58,4 +78,7 @@ jobs:
           role-to-assume: arn:aws:iam::585008088038:role/vora2-github-dev
           aws-region: ap-south-1
       - run: terraform init -input=false
-      - run: terraform apply -input=false -auto-approve -lock-timeout=5m
+      - name: Save plan
+        run: terraform plan -input=false -lock-timeout=5m -no-color -out=tfplan
+      - name: Apply saved plan
+        run: terraform apply -input=false -lock-timeout=5m tfplan

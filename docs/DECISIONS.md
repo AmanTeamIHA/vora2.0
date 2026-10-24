@@ -9,3 +9,4 @@
 | 2026-10-23 | Start fresh, Vora-OLD archived | Avoid confusion |
 | 2026-10-23 | Stack: Next.js+TS web, Python FastAPI backend, Redis Streams events, ECS compute (LiveKit on EC2), Postgres analytics first, reseller layer deferred | One backend language, fewer systems |
 | 2026-10-23 | Global later = separate AWS account, servers, product | Keep India build simple |
+| 2026-10-24 | Playground (playground-dev.hellovora.ai) ships when a change is merged to `dev`. `main` is production. A push to `main` does not auto-deploy. Production is a manual workflow_dispatch, and only Aman deploys it. | The dev environment is the playground. Production stays a human promote. |
