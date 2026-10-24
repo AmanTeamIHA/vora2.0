@@ -1,0 +1,18 @@
+{
+  "trunk_name": "vora2-dev-softphone",
+  "worker_agent_name": "",
+  "room_prefix": "call-",
+  "empty_timeout": 30,
+  "departure_timeout": 10,
+  "metadata": "VORA2-47 dev softphone dispatch. Unknown called numbers do not match.",
+  "routes": [
+    {
+      "name": "vora2-dev-softphone",
+      "number": "+910000000000",
+      "tenant_name": "Vora Test",
+      "agent_name": "Demo receptionist",
+      "tenant_id": "__VORA_TEST_TENANT_ID__",
+      "agent_id": "__VORA_TEST_AGENT_ID__"
+    }
+  ]
+}
